@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학교 행사 포토부스</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="sports">
+
+  <div class="app">
+
+    <!-- 1. 행사 선택 -->
+    <section id="screen-event" class="screen active">
+      <h1 class="app-title">📸 학교 행사 포토부스</h1>
+      <p class="app-sub">오늘의 행사를 선택해주세요</p>
+      <div class="event-grid" id="event-grid"></div>
+    </section>
+
+    <!-- 2. 배치 선택 -->
+    <section id="screen-layout" class="screen">
+      <h2 class="step-title">사진 배치를 선택해주세요</h2>
+      <div class="layout-grid">
+        <button class="layout-card" data-layout="strip">
+          <div class="layout-preview strip-preview">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="layout-label">1 × 4 스트립</div>
+        </button>
+        <button class="layout-card" data-layout="grid">
+          <div class="layout-preview grid-preview">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="layout-label">2 × 2 그리드</div>
+        </button>
+      </div>
+      <button class="btn-back" data-back="screen-event">← 행사 다시 선택</button>
+    </section>
+
+    <!-- 3. 필터 선택 -->
+    <section id="screen-filter" class="screen">
+      <h2 class="step-title">필터를 선택해주세요</h2>
+      <div class="filter-grid" id="filter-grid"></div>
+      <button class="btn-back" data-back="screen-layout">← 배치 다시 선택</button>
+    </section>
+
+    <!-- 4. 촬영 -->
+    <section id="screen-camera" class="screen">
+      <div class="camera-wrap">
+        <div class="progress-dots" id="progress-dots"></div>
+        <div class="video-frame">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="countdown-overlay" id="countdown-overlay"></div>
+          <div class="flash" id="flash"></div>
+          <div class="camera-notice" id="camera-notice"></div>
+        </div>
+        <div class="camera-controls">
+          <button class="btn-secondary" id="btn-switch-camera" hidden>🔄 카메라 전환</button>
+          <button class="btn-primary" id="btn-start-shoot">촬영 시작</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 결과 -->
+    <section id="screen-result" class="screen">
+      <h2 class="step-title">완성됐어요! 🎉</h2>
+      <div class="result-wrap">
+        <img id="result-image" alt="완성된 사진" />
+      </div>
+
+      <div class="share-wrap">
+        <button class="btn-primary" id="btn-share">📤 공유하기</button>
+        <a class="btn-primary" id="btn-download" download="school-photobooth.png">📥 기기에 저장</a>
+        <p class="share-status" id="share-status"></p>
+      </div>
+
+      <div class="result-controls">
+        <button class="btn-secondary" id="btn-retake">다시 찍기</button>
+        <button class="btn-secondary" id="btn-restart">처음부터</button>
+      </div>
+    </section>
+
+  </div>
+
+  <canvas id="capture-canvas" hidden></canvas>
+  <canvas id="result-canvas" hidden></canvas>
+
+  <script src="js/themes.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/compose.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

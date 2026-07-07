@@ -1,0 +1,5 @@
+# Claude Code 로컬 도구 설정 (프로젝트 코드가 아님)
+.claude/
+
+# OS 임시 파일
+Thumbs.db
