@@ -15,20 +15,6 @@ const FILTERS = [
     cssFilter: "grayscale(1) contrast(1.05)",
     overlay: null,
   },
-  {
-    id: "warm",
-    label: "따뜻한 톤",
-    swatch: "linear-gradient(135deg, #ff9966, #ffcc70)",
-    cssFilter: "sepia(0.25) saturate(1.3) hue-rotate(-8deg) brightness(1.05)",
-    overlay: "rgba(255, 150, 60, 0.10)",
-  },
-  {
-    id: "cool",
-    label: "차가운 톤",
-    swatch: "linear-gradient(135deg, #4facfe, #a0e9ff)",
-    cssFilter: "saturate(1.15) hue-rotate(10deg) brightness(0.98) contrast(1.05)",
-    overlay: "rgba(60, 120, 255, 0.10)",
-  },
 ];
 
 function getFilter(id) {

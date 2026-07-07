@@ -104,6 +104,7 @@
     renderProgressDots();
     els.btnStartShoot.disabled = false;
     els.btnStartShoot.textContent = "촬영 시작";
+    els.btnSwitchCamera.disabled = false;
     els.cameraNotice.textContent = "";
     const activeFilter = getFilter(state.filter);
     els.video.style.filter = activeFilter.cssFilter;
@@ -174,8 +175,13 @@
     els.btnStartShoot.addEventListener("click", startShootSequence);
     els.btnSwitchCamera.addEventListener("click", async () => {
       els.btnSwitchCamera.disabled = true;
-      await Camera.switchCamera();
-      els.btnSwitchCamera.disabled = false;
+      try {
+        await Camera.switchCamera();
+      } catch (e) {
+        els.cameraNotice.textContent = "카메라 전환에 실패했어요. 다시 시도해주세요.";
+      } finally {
+        els.btnSwitchCamera.disabled = false;
+      }
     });
     els.btnRetake.addEventListener("click", retake);
     els.btnRestart.addEventListener("click", restart);
