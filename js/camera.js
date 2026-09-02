@@ -31,7 +31,27 @@ const Camera = {
         : true,
       audio: false,
     };
-    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    // 방금 해제한 장치를 곧바로 다시 열 때 OS가 아직 "사용 중"으로 인식해
+    // NotReadableError 등을 던지는 경우가 있어, 짧은 대기 후 몇 차례 재시도한다.
+    const RETRYABLE = ["NotReadableError", "TrackStartError", "AbortError"];
+    let lastErr = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 3 && RETRYABLE.includes(e.name)) {
+          await this.sleep(300 * (attempt + 1));
+          continue;
+        }
+        throw e;
+      }
+    }
+    if (lastErr) throw lastErr;
+
     this.videoEl.srcObject = this.stream;
     await this.videoEl.play();
 

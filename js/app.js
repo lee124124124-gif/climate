@@ -177,8 +177,9 @@
       els.btnSwitchCamera.disabled = true;
       try {
         await Camera.switchCamera();
+        els.cameraNotice.textContent = "";
       } catch (e) {
-        els.cameraNotice.textContent = "카메라 전환에 실패했어요. 다시 시도해주세요.";
+        els.cameraNotice.textContent = `카메라 전환에 실패했어요 (${e.name || e.message || "알 수 없는 오류"}). 다시 시도해주세요.`;
       } finally {
         els.btnSwitchCamera.disabled = false;
       }
