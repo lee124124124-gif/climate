@@ -18,7 +18,13 @@ const Camera = {
   },
 
   async start() {
+    const hadStream = !!this.stream;
     this.stop();
+    if (hadStream) {
+      // 직전 카메라 장치가 OS 레벨에서 완전히 해제될 시간을 확보한다.
+      // (해제 직후 바로 재요청하면 NotReadableError로 실패해 전환이 안 먹힐 수 있음)
+      await this.sleep(300);
+    }
     const constraints = {
       video: this.devices.length
         ? { deviceId: { exact: this.devices[this.deviceIndex].deviceId } }
@@ -29,9 +35,16 @@ const Camera = {
     this.videoEl.srcObject = this.stream;
     await this.videoEl.play();
 
-    // 권한 허용 후에는 라벨이 채워지므로 장치 목록을 다시 읽어 전환 버튼 노출 여부를 정확히 판단한다.
-    const list = await navigator.mediaDevices.enumerateDevices();
-    this.devices = list.filter((d) => d.kind === "videoinput");
+    // 권한 허용 후에는 라벨이 채워지므로 최초 1회에 한해 장치 목록을 다시 읽는다.
+    // (전환할 때마다 다시 읽으면 브라우저가 목록 순서를 바꿀 수 있어 전환 인덱스가 어긋난다)
+    if (!this.devicesLoaded) {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = list.filter((d) => d.kind === "videoinput");
+      if (videoInputs.length) {
+        this.devices = videoInputs;
+      }
+      this.devicesLoaded = true;
+    }
   },
 
   stop() {
@@ -51,7 +64,9 @@ const Camera = {
   },
 
   async switchCamera() {
-    if (!this.hasMultipleCameras()) return;
+    // 전환이 끝나기 전에 다시 호출되는 것을 막아, 연속 클릭 시 상태가 꼬이지 않게 한다.
+    if (!this.hasMultipleCameras() || this.switching) return;
+    this.switching = true;
     const previousIndex = this.deviceIndex;
     this.deviceIndex = (this.deviceIndex + 1) % this.devices.length;
     try {
@@ -61,6 +76,8 @@ const Camera = {
       this.deviceIndex = previousIndex;
       await this.start();
       throw e;
+    } finally {
+      this.switching = false;
     }
   },
 
