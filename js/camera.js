@@ -4,11 +4,17 @@ const Camera = {
   stream: null,
   devices: [],
   deviceIndex: 0,
+  devicesLoaded: false,
+  facingMode: "user", // 모바일 기준 기본은 전면 카메라
+  facingModeSupported: true, // exact facingMode 요청이 가능한 환경인지 (실패하면 deviceId 순환 방식으로 대체)
   audioCtx: null,
 
   async init(videoEl) {
     this.videoEl = videoEl;
     this.deviceIndex = 0;
+    this.devicesLoaded = false;
+    this.facingMode = "user";
+    this.facingModeSupported = true;
     try {
       const list = await navigator.mediaDevices.enumerateDevices();
       this.devices = list.filter((d) => d.kind === "videoinput");
@@ -17,7 +23,8 @@ const Camera = {
     }
   },
 
-  async start() {
+  // videoConstraints를 생략하면 "기본 카메라" 제약(모바일에서는 전면 힌트)으로 시작한다.
+  async start(videoConstraints) {
     const hadStream = !!this.stream;
     this.stop();
     if (hadStream) {
@@ -26,9 +33,8 @@ const Camera = {
       await this.sleep(300);
     }
     const constraints = {
-      video: this.devices.length
-        ? { deviceId: { exact: this.devices[this.deviceIndex].deviceId } }
-        : true,
+      // 데스크톱 웹캠처럼 facingMode 정보가 없는 장치에서는 ideal 힌트가 무시되고 기본 장치가 열린다.
+      video: videoConstraints || { facingMode: { ideal: this.facingMode } },
       audio: false,
     };
 
@@ -87,15 +93,32 @@ const Camera = {
     // 전환이 끝나기 전에 다시 호출되는 것을 막아, 연속 클릭 시 상태가 꼬이지 않게 한다.
     if (!this.hasMultipleCameras() || this.switching) return;
     this.switching = true;
-    const previousIndex = this.deviceIndex;
-    this.deviceIndex = (this.deviceIndex + 1) % this.devices.length;
     try {
-      await this.start();
-    } catch (e) {
-      // 전환 실패 시 이전 카메라로 되돌리고 다시 시작해, 화면이 멈춰있지 않게 한다.
-      this.deviceIndex = previousIndex;
-      await this.start();
-      throw e;
+      if (this.facingModeSupported) {
+        // 모바일: 후면 카메라가 렌즈별로 여러 개 잡히더라도 facingMode로 전면/후면만 정확히 토글한다.
+        const nextFacing = this.facingMode === "environment" ? "user" : "environment";
+        try {
+          await this.start({ facingMode: { exact: nextFacing } });
+          this.facingMode = nextFacing;
+          return;
+        } catch (e) {
+          // 이 기기의 카메라들은 전면/후면 구분 정보가 없다(예: 데스크톱 웹캠 여러 대).
+          // 이후로는 장치 순환 방식으로 전환한다.
+          this.facingModeSupported = false;
+        }
+      }
+
+      // 데스크톱 등 facingMode 미지원 환경: deviceId를 순서대로 돌려가며 전환한다.
+      const previousIndex = this.deviceIndex;
+      this.deviceIndex = (this.deviceIndex + 1) % this.devices.length;
+      try {
+        await this.start({ deviceId: { exact: this.devices[this.deviceIndex].deviceId } });
+      } catch (e) {
+        // 전환 실패 시 이전 카메라로 되돌리고 다시 시작해, 화면이 멈춰있지 않게 한다.
+        this.deviceIndex = previousIndex;
+        await this.start({ deviceId: { exact: this.devices[previousIndex].deviceId } });
+        throw e;
+      }
     } finally {
       this.switching = false;
     }
