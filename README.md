@@ -43,6 +43,31 @@ powershell -ExecutionPolicy Bypass -File .\serve-mobile.ps1 8444
   테스트가 끝나면 `Remove-NetFirewallRule -DisplayName "Photobooth Mobile Test (TCP 8444)"` 로 지우면 됩니다.
 - 학교 네트워크가 유선망과 Wi-Fi 사이를 막아둔 경우(클라이언트 격리)에는 이 방법으로도 접속이 안 될 수 있습니다.
 
+## 인터넷에 올려서 쓰기 (Vercel)
+
+학교 네트워크가 PC↔휴대폰 접속을 막는 경우, Vercel에 올리면 훨씬 편합니다.
+정식 인증서가 붙은 `https://` 주소라 **인증서 경고 없이 카메라가 바로 동작**하고, 교내·교외 어디서든 들어올 수 있습니다.
+
+GitHub 저장소(`lee124124124-gif/climate`)와 한 번만 연결해두면, 이후에는 `git push` 할 때마다 자동으로 배포됩니다.
+
+**최초 연결 (한 번만, 브라우저에서)**
+
+1. [vercel.com](https://vercel.com) 접속 → **Continue with GitHub** 으로 로그인
+2. **Add New… → Project** → 저장소 목록에서 **climate** 선택 → **Import**
+   (목록에 없으면 *Adjust GitHub App Permissions* 로 저장소 접근을 허용)
+3. 설정은 건드릴 필요 없이 그대로 **Deploy**
+   - Framework Preset: **Other** (자동 인식)
+   - Build Command / Output Directory: **비워둠** — 빌드 없는 정적 사이트입니다
+4. 1분쯤 뒤 `https://climate-....vercel.app` 주소가 나오면 완료
+
+**그 다음부터**
+
+- `main` 에 push → 자동 재배포 (보통 30초~1분)
+- 이 저장소의 `vercel.json` 이 캐시를 끄도록 설정해두어서, 배포 직후 새로고침하면 바로 최신 화면이 보입니다
+
+> 로그인은 본인 계정으로만 가능해서 최초 연결 단계는 직접 해주셔야 합니다.
+> 로고 파일(`assets/logo.png`, `assets/sdg13.png`)도 커밋해서 push 해두면 배포본에 함께 올라갑니다.
+
 ## 로고 넣기 (학교 교표 + SDG 13)
 
 모든 사진 아래쪽에 **금일중학교 로고(왼쪽)** 와 **SDG 13 로고(오른쪽)** 가 들어갑니다.
@@ -106,6 +131,7 @@ js/share.js                      # 결과 화면의 "공유하기"(Web Share API
 js/app.js                         # 화면 전환 상태머신, 전체 흐름 연결
 serve.ps1                          # Node/Python 없이 바로 쓸 수 있는 PowerShell 정적 서버 (PC 전용)
 serve-mobile.ps1                    # 휴대폰 접속용 HTTPS 서버 (LAN 바인딩 + 자체 서명 인증서)
+vercel.json                          # Vercel 배포 설정 (빌드 없는 정적 사이트, 캐시 끔)
 ```
 
 **배경을 더 추가하려면** `js/frames.js`의 `FRAMES` 배열에 항목을 하나 추가하면 됩니다.
