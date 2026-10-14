@@ -7,6 +7,8 @@ const Camera = {
   devicesLoaded: false,
   facingMode: "user", // 모바일 기준 기본은 전면 카메라
   facingModeSupported: true, // exact facingMode 요청이 가능한 환경인지 (실패하면 deviceId 순환 방식으로 대체)
+  switching: false, // 카메라 전환이 진행 중인지 (연속 클릭 방지)
+  skipRequested: false, // "지금 찍기"로 카운트다운을 건너뛰었는지
   audioCtx: null,
 
   async init(videoEl) {
@@ -124,7 +126,13 @@ const Camera = {
     }
   },
 
-  // 현재 비디오 프레임을 좌우 반전(셀카 모드)해 캡처하고 filter/overlay를 적용해 dataURL로 반환한다.
+  // 전면(셀카) 카메라일 때만 좌우를 뒤집어 보여준다. 후면 카메라는 보이는 그대로가 맞다.
+  isMirrored() {
+    return this.facingMode !== "environment";
+  },
+
+  // 현재 비디오 프레임을 캡처해 filter/overlay를 적용한 dataURL로 반환한다.
+  // 미리보기(video)와 같은 방향·같은 필터로 찍어서 보이는 그대로 저장되게 한다.
   captureFrame(cssFilter, overlayColor) {
     const canvas = document.getElementById("capture-canvas");
     const w = this.videoEl.videoWidth;
@@ -135,8 +143,10 @@ const Camera = {
 
     ctx.save();
     ctx.filter = cssFilter && cssFilter !== "none" ? cssFilter : "none";
-    ctx.translate(w, 0);
-    ctx.scale(-1, 1);
+    if (this.isMirrored()) {
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(this.videoEl, 0, 0, w, h);
     ctx.restore();
 
@@ -145,7 +155,9 @@ const Camera = {
       ctx.fillRect(0, 0, w, h);
     }
 
-    return canvas.toDataURL("image/png");
+    // 8장을 메모리에 들고 있어야 하므로 용량이 작은 JPEG로 보관한다.
+    // (최종 결과물은 compose.js에서 다시 PNG로 만든다)
+    return canvas.toDataURL("image/jpeg", 0.92);
   },
 
   playBeep(freq = 880, duration = 0.09) {
@@ -172,18 +184,40 @@ const Camera = {
     return new Promise((r) => setTimeout(r, ms));
   },
 
+  // 중간에 "지금 찍기"를 누르면 곧바로 빠져나올 수 있는 대기.
+  async waitOrSkip(ms) {
+    const step = 60;
+    for (let waited = 0; waited < ms; waited += step) {
+      if (this.skipRequested) return;
+      await this.sleep(Math.min(step, ms - waited));
+    }
+  },
+
+  // 카운트다운을 기다리지 않고 바로 찍게 한다.
+  requestSkip() {
+    this.skipRequested = true;
+  },
+
   // 10초 카운트다운을 보여준 뒤 한 장을 촬영해 dataURL을 반환한다.
-  async countdownAndShoot({ overlayEl, flashEl, cssFilter, overlayColor }) {
-    for (let n = 10; n >= 1; n--) {
+  async countdownAndShoot(opts) {
+    const { overlayEl, flashEl, cssFilter, overlayColor } = opts;
+    const from = opts.from || 10;
+    this.skipRequested = false;
+
+    for (let n = from; n >= 1; n--) {
+      if (this.skipRequested) break;
       overlayEl.textContent = n;
       overlayEl.classList.remove("pulse");
       // 강제 리플로우로 애니메이션을 매번 재시작
       void overlayEl.offsetWidth;
       overlayEl.classList.add("pulse");
-      this.playBeep(660, 0.08);
-      await this.sleep(1000);
+      // 마지막 3초는 소리를 높여서 "이제 찍는다"는 걸 알려준다.
+      this.playBeep(n <= 3 ? 880 : 660, 0.08);
+      await this.waitOrSkip(1000);
     }
+
     overlayEl.textContent = "";
+    this.skipRequested = false;
     this.playBeep(1100, 0.12);
     flashEl.classList.add("flash-active");
     const dataUrl = this.captureFrame(cssFilter, overlayColor);

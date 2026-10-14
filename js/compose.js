@@ -1,208 +1,217 @@
-// 촬영된 4장의 사진을 선택한 배치(1x4 / 2x2)와 행사 테마로 합성해 최종 이미지를 만든다.
+// 고른 사진 4장을 배치(1×4 / 2×2)와 프레임 배경으로 합성해 최종 이미지를 만든다.
+//
+// 배치별 수치는 모두 LAYOUTS에 모아두고, 거기서 계산한 레이아웃 정보(r)를
+// frames.js의 painter에게 그대로 넘겨준다. u는 글자·장식 크기를 한 번에 조절하는 배율이다.
+
+const LAYOUTS = {
+  strip: {
+    id: "strip",
+    label: "1 × 4 스트립",
+    hint: "인생네컷 느낌의 길쭉한 사진",
+    W: 720,
+    pad: 34,
+    gap: 26,
+    cols: 1,
+    rows: 4,
+    u: 1,
+    border: 7,
+    radius: 12,
+  },
+  grid: {
+    id: "grid",
+    label: "2 × 2 그리드",
+    hint: "네모반듯하게 모아 찍은 사진",
+    W: 1200,
+    pad: 48,
+    gap: 30,
+    cols: 2,
+    rows: 2,
+    u: 1.15,
+    border: 9,
+    radius: 16,
+  },
+};
+
+const PHOTO_RATIO = 0.75; // 카메라 미리보기와 같은 4:3 비율
+
+function layoutRect(layoutId) {
+  const L = LAYOUTS[layoutId] || LAYOUTS.strip;
+  const u = L.u;
+  const headerH = Math.round(232 * u);
+  const footerH = Math.round(262 * u);
+  const inner = L.W - L.pad * 2;
+  const cellW = Math.round((inner - L.gap * (L.cols - 1)) / L.cols);
+  const photoW = cellW - L.border * 2;
+  const photoH = Math.round(photoW * PHOTO_RATIO);
+  const cellH = photoH + L.border * 2;
+  const photosH = cellH * L.rows + L.gap * (L.rows - 1);
+  const H = headerH + photosH + footerH;
+
+  return Object.assign({}, L, {
+    headerH,
+    footerH,
+    cellW,
+    cellH,
+    photoW,
+    photoH,
+    photosH,
+    H,
+    photoY: headerH,
+    footerY: headerH + photosH,
+    cx: L.W / 2,
+  });
+}
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error("사진을 불러오지 못했습니다."));
     img.src = src;
   });
-}
-
-// object-fit: cover 방식으로 이미지를 지정 영역에 그린다 (비율이 달라도 잘려서 꽉 채워짐).
-function drawImageCover(ctx, img, x, y, w, h) {
-  const scale = Math.max(w / img.width, h / img.height);
-  const sw = w / scale;
-  const sh = h / scale;
-  const sx = (img.width - sw) / 2;
-  const sy = (img.height - sh) / 2;
-  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
 }
 
 function todayLabel() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+  return d.getFullYear() + "." + p(d.getMonth() + 1) + "." + p(d.getDate());
 }
 
-function paintBackground(ctx, w, h, theme) {
-  const grad = ctx.createLinearGradient(0, 0, w, h);
-  grad.addColorStop(0, theme.bgFrom);
-  grad.addColorStop(1, theme.bgTo);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
+function downloadFileName() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return "geumil-climate-photobooth-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + ".png";
 }
 
-function paintEmojiRow(ctx, emojis, centerX, y, fontSize, count = 6) {
-  ctx.font = `${fontSize}px "Segoe UI Emoji", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const spacing = fontSize * 1.15;
-  const startX = centerX - (spacing * (count - 1)) / 2;
-  for (let i = 0; i < count; i++) {
-    ctx.fillText(emojis[i % emojis.length], startX + i * spacing, y);
-  }
-}
-
-async function drawStrip(images, theme) {
-  const W = 640;
-  const outerPad = 24;
-  const headerH = 150;
-  const footerH = 190;
-  const cardX = outerPad;
-  const cardY = outerPad;
-  const cardW = W - outerPad * 2;
-  const gap = 14;
-  const innerPad = 18;
-  const photoW = cardW - innerPad * 2;
-  const photoH = Math.round(photoW * 0.72);
-  const photosH = photoH * 4 + gap * 3;
-  const cardH = headerH + photosH + footerH;
-  const H = cardH + outerPad * 2;
-
-  const canvas = document.getElementById("result-canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-
-  paintBackground(ctx, W, H, theme);
-
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.25)";
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 10;
-  ctx.fillStyle = "#ffffff";
-  roundRect(ctx, cardX, cardY, cardW, cardH, 22);
-  ctx.fill();
-  ctx.restore();
-
-  // 헤더
-  ctx.fillStyle = theme.accent;
-  ctx.textAlign = "center";
-  ctx.font = "bold 34px 'Segoe UI', sans-serif";
-  ctx.fillText(theme.title, W / 2, cardY + 62);
-  ctx.fillStyle = "#333";
-  ctx.font = "20px 'Segoe UI', sans-serif";
-  ctx.fillText(`${theme.icon} ${theme.label} ${theme.icon}`, W / 2, cardY + 100);
-
-  // 사진
-  let y = cardY + headerH;
-  const x = cardX + innerPad;
-  for (const img of images) {
-    roundRect(ctx, x, y, photoW, photoH, 10);
-    ctx.save();
-    ctx.clip();
-    drawImageCover(ctx, img, x, y, photoW, photoH);
-    ctx.restore();
-    ctx.strokeStyle = "rgba(0,0,0,0.08)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, x, y, photoW, photoH, 10);
-    ctx.stroke();
-    y += photoH + gap;
-  }
-
-  // 푸터
-  paintEmojiRow(ctx, theme.emojis, W / 2, cardY + cardH - 110, 30, 6);
-  ctx.fillStyle = "#555";
-  ctx.font = "18px 'Segoe UI', sans-serif";
-  ctx.fillText(todayLabel(), W / 2, cardY + cardH - 55);
-  ctx.fillStyle = "#999";
-  ctx.font = "14px 'Segoe UI', sans-serif";
-  ctx.fillText("School Photobooth", W / 2, cardY + cardH - 28);
-
-  return canvas.toDataURL("image/png");
-}
-
-async function drawGrid(images, theme) {
-  const W = 1200;
-  const outerPad = 40;
-  const headerH = 170;
-  const footerH = 150;
-  const cardX = outerPad;
-  const cardY = outerPad;
-  const cardW = W - outerPad * 2;
-  const gap = 20;
-  const innerPad = 26;
-  const photoAreaW = cardW - innerPad * 2;
-  const photoW = (photoAreaW - gap) / 2;
-  const photoH = photoW;
-  const photosH = photoH * 2 + gap;
-  const cardH = headerH + photosH + footerH;
-  const H = cardH + outerPad * 2;
-
-  const canvas = document.getElementById("result-canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-
-  paintBackground(ctx, W, H, theme);
-
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.25)";
-  ctx.shadowBlur = 34;
-  ctx.shadowOffsetY = 10;
-  ctx.fillStyle = "#ffffff";
-  roundRect(ctx, cardX, cardY, cardW, cardH, 26);
-  ctx.fill();
-  ctx.restore();
-
-  // 헤더
-  ctx.fillStyle = theme.accent;
-  ctx.textAlign = "center";
-  ctx.font = "bold 46px 'Segoe UI', sans-serif";
-  ctx.fillText(theme.title, W / 2, cardY + 80);
-  ctx.fillStyle = "#333";
-  ctx.font = "26px 'Segoe UI', sans-serif";
-  ctx.fillText(`${theme.icon} ${theme.label} ${theme.icon}`, W / 2, cardY + 130);
-
-  // 2x2 사진
-  const positions = [
-    [0, 0],
-    [1, 0],
-    [0, 1],
-    [1, 1],
-  ];
-  const gridX = cardX + innerPad;
-  const gridY = cardY + headerH;
+// 사진 4장을 흰 테두리와 함께 배치한다.
+function drawPhotos(ctx, r, frame, images) {
   images.forEach((img, i) => {
-    const [col, row] = positions[i];
-    const x = gridX + col * (photoW + gap);
-    const y = gridY + row * (photoH + gap);
-    roundRect(ctx, x, y, photoW, photoH, 14);
-    ctx.save();
-    ctx.clip();
-    drawImageCover(ctx, img, x, y, photoW, photoH);
-    ctx.restore();
-    ctx.strokeStyle = "rgba(0,0,0,0.08)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, x, y, photoW, photoH, 14);
-    ctx.stroke();
-  });
+    const col = i % r.cols;
+    const row = Math.floor(i / r.cols);
+    const cellX = r.pad + col * (r.cellW + r.gap);
+    const cellY = r.photoY + row * (r.cellH + r.gap);
 
-  // 푸터
-  paintEmojiRow(ctx, theme.emojis, W / 2, cardY + cardH - 95, 40, 7);
-  ctx.fillStyle = "#555";
-  ctx.font = "24px 'Segoe UI', sans-serif";
-  ctx.fillText(todayLabel(), W / 2, cardY + cardH - 40);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.28)";
+    ctx.shadowBlur = 16 * r.u;
+    ctx.shadowOffsetY = 5 * r.u;
+    ctx.fillStyle = frame.photoBorder;
+    Paint.roundRect(ctx, cellX, cellY, r.cellW, r.cellH, r.radius + r.border);
+    ctx.fill();
+    ctx.restore();
+
+    const px = cellX + r.border;
+    const py = cellY + r.border;
+    ctx.save();
+    Paint.roundRect(ctx, px, py, r.photoW, r.photoH, r.radius);
+    ctx.clip();
+    Paint.cover(ctx, img, px, py, r.photoW, r.photoH);
+    ctx.restore();
+  });
+}
+
+// 모든 프레임에 공통으로 들어가는 아래쪽 정보판 — 문구 / 학교 로고 / SDG 13 뱃지 / 날짜.
+function drawFooterPlate(ctx, r, frame) {
+  const u = r.u;
+  const cx = r.cx;
+
+  // 1) 프레임별 한 줄 구호
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  Paint.fitSize(ctx, frame.tagline, r.W - r.pad * 2.4, (s) => "bold " + s + "px " + FONT_DISPLAY, Math.round(26 * u), 12, 2 * u);
+  ctx.fillStyle = frame.taglineColor;
+  Paint.tracked(ctx, frame.tagline, cx, r.footerY + 52 * u, { spacing: 2 * u });
+  ctx.restore();
+
+  // 2) 로고 + 학교 이름 + SDG 13 뱃지를 가운데 정렬로 한 줄에 배치
+  const rowY = r.footerY + 128 * u;
+  const logoR = 40 * u;
+  const sdgSize = 72 * u;
+  const gap = 26 * u;
+
+  ctx.save();
+  ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
+  const nameW = ctx.measureText("금일중학교").width;
+  ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
+  const enW = ctx.measureText("GEUMIL MIDDLE SCHOOL").width + 1.4 * u * 19;
+  const textW = Math.max(nameW, enW);
+  ctx.restore();
+
+  const totalW = logoR * 2 + gap + textW + gap + sdgSize;
+  const startX = cx - totalW / 2;
+
+  SchoolLogo.drawBadge(ctx, startX + logoR, rowY, logoR, frame.logoRing);
+
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  const textCx = startX + logoR * 2 + gap + textW / 2;
+  ctx.fillStyle = frame.ink;
+  ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
+  ctx.fillText("금일중학교", textCx, rowY + 2 * u);
+  ctx.fillStyle = frame.inkSoft;
+  ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
+  Paint.tracked(ctx, "GEUMIL MIDDLE SCHOOL", textCx, rowY + 22 * u, { spacing: 1.4 * u });
+  ctx.restore();
+
+  Paint.sdg13Badge(ctx, startX + totalW - sdgSize / 2, rowY, sdgSize);
+
+  // 3) 날짜 + 컨셉 한 줄
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = frame.inkSoft;
+  ctx.font = "bold " + Math.round(14 * u) + "px " + FONT_BODY;
+  ctx.fillText(todayLabel() + "  ·  미국문화 × SDG 13 기후행동 포토부스", cx, r.footerY + 206 * u);
+  ctx.restore();
+}
+
+async function composeResult(shots, layoutId, frameId) {
+  const frame = getFrame(frameId);
+  const r = layoutRect(layoutId);
+  const images = await Promise.all(shots.map(loadImage));
+
+  const canvas = document.getElementById("result-canvas");
+  canvas.width = r.W;
+  canvas.height = r.H;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, r.W, r.H);
+
+  frame.backdrop(ctx, r);
+  frame.header(ctx, r);
+  frame.footer(ctx, r);
+  drawPhotos(ctx, r, frame, images);
+  drawFooterPlate(ctx, r, frame);
 
   return canvas.toDataURL("image/png");
 }
 
-async function composeResult(shots, layoutId, themeId) {
-  const theme = getTheme(themeId);
-  const images = await Promise.all(shots.map(loadImage));
-  if (layoutId === "grid") {
-    return drawGrid(images, theme);
+// 프레임 선택 화면에서 쓰는 작은 미리보기. 실제 합성과 같은 painter로 그려서
+// 고른 배경이 결과물과 어긋나지 않게 한다. (사진 자리는 회색 박스로 대신 표시)
+function drawFramePreview(canvas, frameId, layoutId) {
+  const frame = getFrame(frameId);
+  const r = layoutRect(layoutId || "strip");
+  const scale = canvas.width / r.W;
+  const ctx = canvas.getContext("2d");
+  canvas.height = Math.round(r.H * scale);
+  ctx.save();
+  ctx.scale(scale, scale);
+  frame.backdrop(ctx, r);
+  frame.header(ctx, r);
+  frame.footer(ctx, r);
+  for (let i = 0; i < r.cols * r.rows; i++) {
+    const col = i % r.cols;
+    const row = Math.floor(i / r.cols);
+    const cellX = r.pad + col * (r.cellW + r.gap);
+    const cellY = r.photoY + row * (r.cellH + r.gap);
+    ctx.fillStyle = frame.photoBorder;
+    Paint.roundRect(ctx, cellX, cellY, r.cellW, r.cellH, r.radius + r.border);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.13)";
+    Paint.roundRect(ctx, cellX + r.border, cellY + r.border, r.photoW, r.photoH, r.radius);
+    ctx.fill();
   }
-  return drawStrip(images, theme);
+  drawFooterPlate(ctx, r, frame);
+  ctx.restore();
 }

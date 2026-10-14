@@ -3,78 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>학교 행사 포토부스</title>
+<title>아메리칸 기후 카니발 포토부스 | 금일중학교</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body data-theme="sports">
+<body data-frame="carnival">
+
+  <div class="flag-bar"></div>
 
   <div class="app">
 
-    <!-- 1. 행사 선택 -->
-    <section id="screen-event" class="screen active">
-      <h1 class="app-title">📸 학교 행사 포토부스</h1>
-      <p class="app-sub">오늘의 행사를 선택해주세요</p>
-      <div class="event-grid" id="event-grid"></div>
+    <header class="app-head">
+      <span class="brand-logo" id="brand-logo" aria-hidden="true"></span>
+      <div class="brand-text">
+        <strong>AMERICAN CLIMATE CARNIVAL</strong>
+        <span>금일중학교 × SDG 13 기후행동 포토부스</span>
+      </div>
+    </header>
+
+    <!-- 1. 포토 배경 선택 -->
+    <section id="screen-frame" class="screen active">
+      <h2 class="step-title"><em>STEP 1</em>포토 배경을 골라주세요 🎪</h2>
+      <div class="frame-grid" id="frame-grid"></div>
+
+      <div class="logo-bar">
+        <span class="logo-chip" id="logo-chip" aria-hidden="true"></span>
+        <div class="logo-copy">
+          <strong id="logo-status">학교 로고 확인 중…</strong>
+          <span>모든 사진 아래에 학교 로고가 함께 들어가요</span>
+        </div>
+        <button class="btn-mini" id="btn-logo-pick">로고 등록</button>
+        <input type="file" id="logo-input" accept="image/*" hidden>
+      </div>
     </section>
 
     <!-- 2. 배치 선택 -->
     <section id="screen-layout" class="screen">
-      <h2 class="step-title">사진 배치를 선택해주세요</h2>
+      <h2 class="step-title"><em>STEP 2</em>사진 배치를 골라주세요 🖼️</h2>
       <div class="layout-grid">
         <button class="layout-card" data-layout="strip">
           <div class="layout-preview strip-preview">
             <span></span><span></span><span></span><span></span>
           </div>
           <div class="layout-label">1 × 4 스트립</div>
+          <div class="layout-hint">인생네컷 느낌의 길쭉한 사진</div>
         </button>
         <button class="layout-card" data-layout="grid">
           <div class="layout-preview grid-preview">
             <span></span><span></span><span></span><span></span>
           </div>
           <div class="layout-label">2 × 2 그리드</div>
+          <div class="layout-hint">네모반듯하게 모아 찍은 사진</div>
         </button>
       </div>
-      <button class="btn-back" data-back="screen-event">← 행사 다시 선택</button>
+      <button class="btn-back" data-back="screen-frame">← 배경 다시 고르기</button>
     </section>
 
     <!-- 3. 필터 선택 -->
     <section id="screen-filter" class="screen">
-      <h2 class="step-title">필터를 선택해주세요</h2>
+      <h2 class="step-title"><em>STEP 3</em>필터를 골라주세요 ✨</h2>
       <div class="filter-grid" id="filter-grid"></div>
-      <button class="btn-back" data-back="screen-layout">← 배치 다시 선택</button>
+      <button class="btn-back" data-back="screen-layout">← 배치 다시 고르기</button>
     </section>
 
-    <!-- 4. 촬영 -->
+    <!-- 4. 촬영 (8장) -->
     <section id="screen-camera" class="screen">
+      <h2 class="step-title"><em>STEP 4</em>8장을 찍어요 📸</h2>
       <div class="camera-wrap">
+        <div class="shot-status" id="shot-status">촬영 시작을 누르면 10초 뒤에 자동으로 찍혀요</div>
         <div class="progress-dots" id="progress-dots"></div>
         <div class="video-frame">
           <video id="video" autoplay playsinline muted></video>
           <div class="countdown-overlay" id="countdown-overlay"></div>
           <div class="flash" id="flash"></div>
-          <div class="camera-notice" id="camera-notice"></div>
+          <div class="camera-notice" id="camera-notice" hidden></div>
         </div>
         <div class="camera-controls">
-          <button class="btn-secondary" id="btn-switch-camera" hidden>🔄 카메라 전환</button>
           <button class="btn-primary" id="btn-start-shoot">촬영 시작</button>
+          <button class="btn-secondary" id="btn-shoot-now" hidden>⚡ 지금 찍기</button>
+          <button class="btn-secondary" id="btn-switch-camera" hidden>🔄 카메라 전환</button>
         </div>
+        <button class="btn-back" data-back="screen-filter">← 필터 다시 고르기</button>
       </div>
     </section>
 
-    <!-- 5. 결과 -->
+    <!-- 5. 8장 중 4장 고르기 -->
+    <section id="screen-pick" class="screen">
+      <h2 class="step-title"><em>STEP 5</em>마음에 드는 4장을 골라요 💚</h2>
+      <p class="pick-counter"><strong id="pick-count">0</strong> / 4 선택됨</p>
+      <div class="pick-grid" id="pick-grid"></div>
+      <div class="pick-controls">
+        <button class="btn-primary" id="btn-compose" disabled>이 4장으로 만들기</button>
+        <button class="btn-secondary" id="btn-pick-clear">선택 지우기</button>
+        <button class="btn-secondary" id="btn-pick-retake">다시 찍기</button>
+      </div>
+    </section>
+
+    <!-- 6. 결과 -->
     <section id="screen-result" class="screen">
-      <h2 class="step-title">완성됐어요! 🎉</h2>
+      <h2 class="step-title"><em>STEP 6</em>완성됐어요! 🎉</h2>
       <div class="result-wrap">
-        <img id="result-image" alt="완성된 사진" />
+        <img id="result-image" alt="완성된 포토부스 사진" />
       </div>
 
       <div class="share-wrap">
         <button class="btn-primary" id="btn-share">📤 공유하기</button>
-        <a class="btn-primary" id="btn-download" download="school-photobooth.png">📥 기기에 저장</a>
+        <a class="btn-primary" id="btn-download" download="geumil-climate-photobooth.png">📥 기기에 저장</a>
         <p class="share-status" id="share-status"></p>
       </div>
 
       <div class="result-controls">
+        <button class="btn-secondary" id="btn-reselect">사진 다시 고르기</button>
         <button class="btn-secondary" id="btn-retake">다시 찍기</button>
         <button class="btn-secondary" id="btn-restart">처음부터</button>
       </div>
@@ -85,7 +123,9 @@
   <canvas id="capture-canvas" hidden></canvas>
   <canvas id="result-canvas" hidden></canvas>
 
-  <script src="js/themes.js"></script>
+  <script src="js/paint.js"></script>
+  <script src="js/logo.js"></script>
+  <script src="js/frames.js"></script>
   <script src="js/filters.js"></script>
   <script src="js/camera.js"></script>
   <script src="js/compose.js"></script>

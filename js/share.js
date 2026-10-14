@@ -47,7 +47,7 @@ const ShareUI = {
 
     try {
       const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], "school-photobooth.png", { type: blob.type || "image/png" });
+      const file = new File([blob], downloadFileName(), { type: blob.type || "image/png" });
 
       if (!navigator.canShare({ files: [file] })) {
         this.setStatus("이 기기에서는 사진 공유를 지원하지 않아요. 기기에 저장을 이용해주세요.", "error");
@@ -56,8 +56,8 @@ const ShareUI = {
 
       await navigator.share({
         files: [file],
-        title: "학교 행사 포토부스",
-        text: "포토부스에서 찍은 사진이에요 📸",
+        title: "아메리칸 기후 카니발 포토부스",
+        text: "금일중학교 기후행동 포토부스에서 찍었어요 📸🌍 #SDG13 #ClimateAction",
       });
       this.setStatus("공유했어요!", "success");
     } catch (err) {
