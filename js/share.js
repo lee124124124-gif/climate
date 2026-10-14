@@ -57,7 +57,7 @@ const ShareUI = {
       await navigator.share({
         files: [file],
         title: "아메리칸 기후 카니발 포토부스",
-        text: "금일중학교 기후행동 포토부스에서 찍었어요 📸🌍 #SDG13 #ClimateAction",
+        text: "금일중학교 세계시민 팀 프로젝트 활동 포토부스에서 찍었어요 📸🌍 #SDG13 #ClimateAction",
       });
       this.setStatus("공유했어요!", "success");
     } catch (err) {

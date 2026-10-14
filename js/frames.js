@@ -35,14 +35,15 @@ const FRAMES = [
       ctx.fillStyle = p.cream;
       ctx.fillRect(0, 0, r.W, r.H);
 
-      // 양옆 여백에 캔디 스트라이프 (성조기 줄무늬를 세로로 세운 느낌)
-      const barW = Math.round(r.pad * 0.42);
-      const step = 30 * r.u;
+      // 양옆 여백에 성조기 색(빨강-네이비)을 번갈아 세운 캔디 스트라이프.
+      // 흰색은 바탕(크림색)에 묻혀 보이지 않으므로 네이비를 쓴다.
+      const barW = Math.round(r.pad * 0.5);
+      const step = 28 * r.u;
       for (let y = 0; y < r.H; y += step * 2) {
         ctx.fillStyle = p.red;
         ctx.fillRect(0, y, barW, step);
         ctx.fillRect(r.W - barW, y + step, barW, step);
-        ctx.fillStyle = p.green;
+        ctx.fillStyle = p.navy;
         ctx.fillRect(0, y + step, barW, step);
         ctx.fillRect(r.W - barW, y, barW, step);
       }
@@ -54,7 +55,7 @@ const FRAMES = [
       Paint.starField(ctx, 0, 0, r.W, bandH, "#ffffff", Math.round(r.W / 22), 3, 9 * r.u);
 
       // 밴드 아래 성조기 줄무늬
-      Paint.stripes(ctx, 0, bandH, r.W, 12 * r.u, [p.red, p.cream, p.green], 3);
+      Paint.stripes(ctx, 0, bandH, r.W, 12 * r.u, [p.red, p.cream, p.red], 3);
     },
 
     header(ctx, r) {
@@ -73,10 +74,10 @@ const FRAMES = [
       // 학교 이름 (작게)
       ctx.fillStyle = p.gold;
       ctx.font = "bold " + Math.round(15 * u) + "px " + FONT_BODY;
-      Paint.tracked(ctx, "★ GEUMIL MIDDLE SCHOOL ★", cx, 108 * u, { spacing: 2.2 * u });
+      Paint.tracked(ctx, "★ KUMIL MIDDLE SCHOOL ★", cx, 108 * u, { spacing: 2.2 * u });
 
       // 메인 타이틀 — 양옆의 지구·잎 아이콘 자리를 비워두고 그 폭에 맞춘다.
-      const maxW = r.W - r.pad * 2 - 110 * u;
+      const maxW = r.W - r.pad * 2 - 132 * u;
       Paint.fitSize(ctx, this.title, maxW, (s) => "bold " + s + "px " + FONT_DISPLAY, Math.round(40 * u), 16, 1.5 * u);
       ctx.fillStyle = "#ffffff";
       Paint.tracked(ctx, this.title, cx, 152 * u, { spacing: 1.5 * u, stroke: p.red, lineWidth: 7 * u });
@@ -87,8 +88,8 @@ const FRAMES = [
       ctx.fillText(this.sub, cx, 184 * u);
       ctx.restore();
 
-      // 지구 + 잎 아이콘
-      Paint.earth(ctx, r.pad + 22 * u, 150 * u, 20 * u, { ring: "rgba(255,255,255,0.9)" });
+      // 왼쪽엔 성조기, 오른쪽엔 잎사귀 — 미국과 환경을 한 쌍으로 둔다.
+      Paint.usFlag(ctx, r.pad + 2 * u, 134 * u, 48 * u, 31 * u);
       Paint.leaf(ctx, r.W - r.pad - 22 * u, 150 * u, 22 * u, p.green, 0.5);
     },
 
@@ -96,10 +97,10 @@ const FRAMES = [
       const p = this.pal;
       const u = r.u;
       // 색종이 조각
-      Paint.confetti(ctx, r.pad, r.footerY + 6 * u, r.W - r.pad * 2, r.footerH - 70 * u,
-        [p.red, p.navy, p.green, p.gold], Math.round(26 * u), 21);
-      // 바닥 줄무늬
-      Paint.stripes(ctx, 0, r.H - 16 * u, r.W, 16 * u, [p.red, p.cream, p.navy, p.cream, p.green], 5);
+      Paint.confetti(ctx, r.pad, r.footerY + 6 * u, r.W - r.pad * 2, r.footerH - 74 * u,
+        [p.red, p.navy, p.green, p.gold], Math.round(22 * u), 21);
+      // 바닥 성조기 줄무늬
+      Paint.stripes(ctx, 0, r.H - 18 * u, r.W, 18 * u, [p.red, p.cream, p.red, p.cream, p.red], 5);
     },
   },
 
@@ -145,6 +146,9 @@ const FRAMES = [
       // 바닥의 해수면 물결
       Paint.waves(ctx, 0, r.H - 52 * r.u, r.W, 52 * r.u, "rgba(255,255,255,0.14)", 9 * r.u, 150 * r.u);
       Paint.waves(ctx, 0, r.H - 32 * r.u, r.W, 32 * r.u, "rgba(6,48,45,0.45)", 7 * r.u, 110 * r.u);
+
+      // 맨 위 성조기 리본 (빨강-흰색 줄무늬)
+      Paint.stripes(ctx, 0, 0, r.W, 9 * r.u, ["#C8102E", "#FFF7EC", "#C8102E"], 3);
     },
 
     header(ctx, r) {
@@ -153,9 +157,13 @@ const FRAMES = [
       const cx = r.cx;
 
       // 왕관과 횃불
-      Paint.libertyCrown(ctx, cx, 62 * u, 120 * u, p.pale, p.gold);
-      Paint.libertyTorch(ctx, r.pad + 30 * u, 86 * u, 74 * u, { body: p.pale, flame: p.gold });
-      Paint.libertyTorch(ctx, r.W - r.pad - 30 * u, 86 * u, 74 * u, { body: p.pale, flame: p.gold });
+      Paint.libertyCrown(ctx, cx, 68 * u, 120 * u, p.pale, p.gold);
+      Paint.libertyTorch(ctx, r.pad + 30 * u, 92 * u, 74 * u, { body: p.pale, flame: p.gold });
+      Paint.libertyTorch(ctx, r.W - r.pad - 30 * u, 92 * u, 74 * u, { body: p.pale, flame: p.gold });
+
+      // 성조기 (자유의 여신상과 함께 미국을 바로 알아보게)
+      Paint.usFlag(ctx, r.pad + 4 * u, 18 * u, 46 * u, 30 * u);
+      Paint.usFlag(ctx, r.W - r.pad - 50 * u, 18 * u, 46 * u, 30 * u);
 
       ctx.save();
       ctx.textAlign = "center";
@@ -171,7 +179,7 @@ const FRAMES = [
 
       ctx.fillStyle = p.gold;
       ctx.font = "bold " + Math.round(15 * u) + "px " + FONT_BODY;
-      Paint.tracked(ctx, "GEUMIL MIDDLE SCHOOL · SDG 13", cx, 182 * u, { spacing: 2 * u });
+      Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL · SDG 13", cx, 182 * u, { spacing: 2 * u });
 
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.font = Math.round(15 * u) + "px " + FONT_BODY;
@@ -181,12 +189,9 @@ const FRAMES = [
 
     footer(ctx, r) {
       const u = r.u;
-      const p = this.pal;
-      // 잎사귀 두 장
-      Paint.leaf(ctx, r.pad + 26 * u, r.footerY + 44 * u, 17 * u, "rgba(255,255,255,0.5)", -0.6);
-      Paint.leaf(ctx, r.W - r.pad - 26 * u, r.footerY + 44 * u, 17 * u, "rgba(255,255,255,0.5)", 0.6);
-      // 지구
-      Paint.earth(ctx, r.cx, r.H - 46 * u, 15 * u, { ring: p.gold, sea: "#1C6FA8", land: "#6FC08C" });
+      // 캐릭터가 들어갈 자리를 비워두고, 물결 위에 별만 몇 개 띄운다.
+      Paint.starField(ctx, r.pad, r.footerY + 10 * u, r.W - r.pad * 2, 30 * u,
+        "rgba(255,255,255,0.5)", 7, 31, 6 * u);
     },
   },
 
@@ -273,8 +278,12 @@ const FRAMES = [
       ctx.restore();
 
       // 양쪽 풍력 발전기
-      Paint.windTurbine(ctx, r.pad + 24 * u, 110 * u, 66 * u, "rgba(255,255,255,0.85)", 0.4);
-      Paint.windTurbine(ctx, r.W - r.pad - 24 * u, 110 * u, 66 * u, "rgba(255,255,255,0.85)", -0.7);
+      Paint.windTurbine(ctx, r.pad + 30 * u, 128 * u, 54 * u, "rgba(255,255,255,0.85)", 0.4);
+      Paint.windTurbine(ctx, r.W - r.pad - 30 * u, 128 * u, 54 * u, "rgba(255,255,255,0.85)", -0.7);
+
+      // 표지판 옆 성조기
+      Paint.usFlag(ctx, r.pad + 2 * u, 14 * u, 44 * u, 29 * u);
+      Paint.usFlag(ctx, r.W - r.pad - 46 * u, 14 * u, 44 * u, 29 * u);
 
       ctx.save();
       ctx.textAlign = "center";
@@ -289,7 +298,7 @@ const FRAMES = [
       ctx.shadowBlur = 7 * u;
       ctx.fillStyle = p.gold;
       ctx.font = "bold " + Math.round(14 * u) + "px " + FONT_BODY;
-      Paint.tracked(ctx, "GEUMIL MIDDLE SCHOOL · SDG 13", cx, 188 * u, { spacing: 1.8 * u });
+      Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL · SDG 13", cx, 188 * u, { spacing: 1.8 * u });
 
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold " + Math.round(14 * u) + "px " + FONT_BODY;
@@ -298,20 +307,10 @@ const FRAMES = [
     },
 
     footer(ctx, r) {
-      const p = this.pal;
       const u = r.u;
-      const baseY = r.H - 86 * r.u;
-      // 지평선 위의 풍력 단지
-      Paint.windTurbine(ctx, r.pad + 30 * u, baseY, 52 * u, "rgba(255,255,255,0.5)", 0.9);
-      Paint.windTurbine(ctx, r.pad + 78 * u, baseY, 36 * u, "rgba(255,255,255,0.35)", -0.3);
-      Paint.windTurbine(ctx, r.W - r.pad - 30 * u, baseY, 52 * u, "rgba(255,255,255,0.5)", -1.1);
-      Paint.windTurbine(ctx, r.W - r.pad - 78 * u, baseY, 36 * u, "rgba(255,255,255,0.35)", 0.5);
-      // 도로 위 전기차 이모지
-      Paint.emoji(ctx, "🚙", r.cx - 70 * u, r.H - 30 * u, 26 * u);
-      Paint.emoji(ctx, "🚲", r.cx + 70 * u, r.H - 30 * u, 24 * u);
-      ctx.save();
-      ctx.fillStyle = p.green;
-      ctx.restore();
+      // 도로 위 전기차·자전거 (캐릭터 자리를 가리지 않도록 도로 쪽에만 둔다)
+      Paint.emoji(ctx, "🚙", r.cx - 74 * u, r.H - 30 * u, 26 * u);
+      Paint.emoji(ctx, "🚲", r.cx + 74 * u, r.H - 30 * u, 24 * u);
     },
   },
 
@@ -413,6 +412,10 @@ const FRAMES = [
       ctx.shadowBlur = 8 * u;
       Paint.tracked(ctx, "NATIONAL PARK SERVICE OF THE PLANET", cx, 40 * u, { spacing: 1.6 * u });
       ctx.restore();
+
+      // 빈티지 포스터 안쪽 모서리의 성조기
+      Paint.usFlag(ctx, r.pad - 6 * u, 62 * u, 44 * u, 29 * u);
+      Paint.usFlag(ctx, r.W - r.pad - 38 * u, 62 * u, 44 * u, 29 * u);
     },
 
     footer(ctx, r) {
@@ -427,8 +430,6 @@ const FRAMES = [
       Paint.roundRect(ctx, r.pad * 0.7, r.footerY + 8 * u, r.W - r.pad * 1.4, r.footerH - 54 * u, 14 * u);
       ctx.stroke();
       ctx.restore();
-      Paint.leaf(ctx, r.pad + 18 * u, r.footerY + 46 * u, 15 * u, p.pine, -0.5);
-      Paint.leaf(ctx, r.W - r.pad - 18 * u, r.footerY + 46 * u, 15 * u, p.pine, 0.5);
     },
   },
 ];

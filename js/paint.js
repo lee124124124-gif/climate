@@ -437,6 +437,234 @@ const Paint = {
     ctx.restore();
   },
 
+  // ───────── 성조기 ─────────
+  // 13줄 줄무늬 + 별이 박힌 캔턴을 가진 실제 성조기 모양.
+  usFlag(ctx, x, y, w, h) {
+    const stripeH = h / 13;
+    ctx.save();
+    for (let i = 0; i < 13; i++) {
+      ctx.fillStyle = i % 2 === 0 ? "#C8102E" : "#FFFFFF";
+      ctx.fillRect(x, y + i * stripeH, w, stripeH + 0.4);
+    }
+    const cantonW = w * 0.42;
+    const cantonH = stripeH * 7;
+    ctx.fillStyle = "#16255E";
+    ctx.fillRect(x, y, cantonW, cantonH);
+    ctx.fillStyle = "#ffffff";
+    const starR = Math.min(cantonW / 13, cantonH / 11);
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 5; col++) {
+        this.star(ctx, x + (cantonW * (col + 0.5)) / 5, y + (cantonH * (row + 0.5)) / 4, starR);
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = "rgba(0,0,0,0.2)";
+    ctx.lineWidth = Math.max(1, h * 0.02);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  },
+
+  // ───────── 귀여운 캐릭터 ─────────
+  // 아래 두 캐릭터는 100×100 좌표계(가운데가 0,0)에 그린 뒤 size에 맞춰 확대/축소한다.
+  // 눈을 크게, 볼에 홍조를 넣어 중학생들이 좋아할 만한 동글동글한 인상으로 맞췄다.
+
+  // 미국 상징 흰머리수리 + 엉클샘 모자.
+  eagleMascot(ctx, cx, cy, size) {
+    const brown = "#7A4A24";
+    const brownDark = "#5E3719";
+    const cream = "#FFFDF6";
+    const navy = "#16255E";
+    const red = "#C8102E";
+    const gold = "#F5B301";
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(size / 100, size / 100);
+
+    // 꼬리
+    ctx.fillStyle = cream;
+    ctx.beginPath();
+    ctx.moveTo(-6, 30);
+    ctx.lineTo(6, 30);
+    ctx.lineTo(10, 46);
+    ctx.lineTo(-10, 46);
+    ctx.closePath();
+    ctx.fill();
+
+    // 날개
+    ctx.fillStyle = brownDark;
+    [-1, 1].forEach((dir) => {
+      ctx.save();
+      ctx.translate(dir * 24, 10);
+      ctx.rotate(dir * 0.3);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 10, 19, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // 몸통
+    ctx.fillStyle = brown;
+    ctx.beginPath();
+    ctx.ellipse(0, 13, 26, 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 발
+    ctx.fillStyle = gold;
+    [-10, 10].forEach((dx) => {
+      ctx.beginPath();
+      ctx.ellipse(dx, 35, 7, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 머리 (흰머리수리의 흰 머리)
+    ctx.fillStyle = cream;
+    ctx.beginPath();
+    ctx.arc(0, -14, 23, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 부리
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.moveTo(-7, -10);
+    ctx.lineTo(7, -10);
+    ctx.lineTo(0, 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // 눈
+    [-9, 9].forEach((dx) => {
+      ctx.fillStyle = "#2B2B2B";
+      ctx.beginPath();
+      ctx.arc(dx, -20, 4.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(dx - 1.5, -21.6, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 볼 홍조
+    ctx.fillStyle = "rgba(255,120,120,0.45)";
+    [-16, 16].forEach((dx) => {
+      ctx.beginPath();
+      ctx.ellipse(dx, -11, 4.6, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 엉클샘 모자
+    ctx.fillStyle = navy;
+    ctx.beginPath();
+    ctx.ellipse(0, -34, 26, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    this.roundRect(ctx, -15, -58, 30, 24, 3);
+    ctx.fill();
+    ctx.fillStyle = red;
+    ctx.fillRect(-15, -44, 30, 7);
+    ctx.fillStyle = "#ffffff";
+    [-7, 7].forEach((dx) => {
+      this.star(ctx, dx, -40.5, 2.6);
+      ctx.fill();
+    });
+
+    ctx.restore();
+  },
+
+  // SDG 13(기후행동) 상징 — 새싹을 틔운 지구 캐릭터.
+  earthMascot(ctx, cx, cy, size) {
+    const sea = "#2E8BD6";
+    const land = "#49B56B";
+    const leafColor = "#3F9E44"; // SDG 13 계열 녹색
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(size / 100, size / 100);
+
+    // 팔
+    ctx.fillStyle = sea;
+    [-1, 1].forEach((dir) => {
+      ctx.beginPath();
+      ctx.ellipse(dir * 31, 14, 8, 6, dir * -0.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 다리
+    [-12, 12].forEach((dx) => {
+      ctx.beginPath();
+      ctx.ellipse(dx, 38, 8, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 지구 본체
+    ctx.beginPath();
+    ctx.arc(0, 6, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 대륙
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 6, 30, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = land;
+    ctx.beginPath();
+    ctx.ellipse(-18, -8, 13, 9, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-14, 22, 8, 11, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(21, 14, 10, 13, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(14, -16, 9, 6, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 눈
+    [-11, 11].forEach((dx) => {
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.ellipse(dx, 2, 7.5, 8.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2B2B2B";
+      ctx.beginPath();
+      ctx.arc(dx + (dx > 0 ? -0.5 : 0.5), 3.5, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(dx - 1.5, 1.2, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 미소
+    ctx.strokeStyle = "#2B2B2B";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 13, 9, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+
+    // 볼 홍조
+    ctx.fillStyle = "rgba(255,120,120,0.5)";
+    [-22, 22].forEach((dx) => {
+      ctx.beginPath();
+      ctx.ellipse(dx, 12, 5, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 머리 위 새싹
+    ctx.strokeStyle = leafColor;
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -23);
+    ctx.quadraticCurveTo(1, -32, 0, -38);
+    ctx.stroke();
+    this.leaf(ctx, -8, -38, 8, leafColor, -0.9);
+    this.leaf(ctx, 8, -43, 9, "#56B96A", 0.9);
+
+    ctx.restore();
+  },
+
   // ───────── SDG 13 뱃지 ─────────
   // UN 지속가능발전목표 13번(기후변화 대응) 타일을 단순화해 그린다. 공식 색은 #3F7E44.
   sdg13Badge(ctx, cx, cy, size) {

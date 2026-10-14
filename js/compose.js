@@ -71,16 +71,11 @@ function loadImage(src) {
   });
 }
 
-function todayLabel() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  return d.getFullYear() + "." + p(d.getMonth() + 1) + "." + p(d.getDate());
-}
-
+// 사진 안에는 날짜를 넣지 않지만, 저장 파일끼리 구분되도록 파일 이름에는 찍은 시각을 쓴다.
 function downloadFileName() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, "0");
-  return "geumil-climate-photobooth-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + ".png";
+  return "kumil-photobooth-" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + ".png";
 }
 
 // 사진 4장을 흰 테두리와 함께 배치한다.
@@ -110,7 +105,11 @@ function drawPhotos(ctx, r, frame, images) {
   });
 }
 
-// 모든 프레임에 공통으로 들어가는 아래쪽 정보판 — 문구 / 학교 로고 / SDG 13 뱃지 / 날짜.
+// 사진 아래쪽에 들어가는 글귀. 행사 성격에 맞춰 이 문구만 바꾸면 네 배경에 한 번에 반영된다.
+const FOOTER_CAPTION = "세계시민 팀 프로젝트 활동 포토부스";
+
+// 모든 프레임에 공통으로 들어가는 아래쪽 정보판 —
+// 구호 / 캐릭터 / 학교 로고 / 학교 이름 / SDG 13 로고 / 활동 문구. (날짜는 넣지 않는다)
 function drawFooterPlate(ctx, r, frame) {
   const u = r.u;
   const cx = r.cx;
@@ -124,46 +123,53 @@ function drawFooterPlate(ctx, r, frame) {
   Paint.tracked(ctx, frame.tagline, cx, r.footerY + 52 * u, { spacing: 2 * u });
   ctx.restore();
 
-  // 2) 로고 + 학교 이름 + SDG 13 뱃지를 가운데 정렬로 한 줄에 배치
+  // 2) 학교 로고 + 학교 이름 + SDG 13 로고를 가운데 정렬로 한 줄에 배치
   const rowY = r.footerY + 128 * u;
-  const logoR = 40 * u;
-  const sdgSize = 72 * u;
-  const gap = 26 * u;
+  const logoSize = 78 * u;
+  const sdgSize = 74 * u;
+  const gap = 24 * u;
 
   ctx.save();
   ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
   const nameW = ctx.measureText("금일중학교").width;
   ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
-  const enW = ctx.measureText("GEUMIL MIDDLE SCHOOL").width + 1.4 * u * 19;
+  const enW = ctx.measureText("KUMIL MIDDLE SCHOOL").width + 1.4 * u * 18;
   const textW = Math.max(nameW, enW);
   ctx.restore();
 
-  const totalW = logoR * 2 + gap + textW + gap + sdgSize;
+  const totalW = logoSize + gap + textW + gap + sdgSize;
   const startX = cx - totalW / 2;
 
-  SchoolLogo.drawBadge(ctx, startX + logoR, rowY, logoR, frame.logoRing);
+  // 학교 로고 / SDG 13 로고 — 둘 다 원본 이미지를 비율 그대로 넣는다.
+  SchoolLogo.draw(ctx, startX + logoSize / 2, rowY, logoSize, frame.logoRing);
+  SdgLogo.draw(ctx, startX + totalW - sdgSize / 2, rowY, sdgSize);
 
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  const textCx = startX + logoR * 2 + gap + textW / 2;
+  const textCx = startX + logoSize + gap + textW / 2;
   ctx.fillStyle = frame.ink;
   ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
   ctx.fillText("금일중학교", textCx, rowY + 2 * u);
   ctx.fillStyle = frame.inkSoft;
   ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
-  Paint.tracked(ctx, "GEUMIL MIDDLE SCHOOL", textCx, rowY + 22 * u, { spacing: 1.4 * u });
+  Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL", textCx, rowY + 22 * u, { spacing: 1.4 * u });
   ctx.restore();
 
-  Paint.sdg13Badge(ctx, startX + totalW - sdgSize / 2, rowY, sdgSize);
+  // 3) 양옆의 귀여운 캐릭터 — 왼쪽은 미국(흰머리수리), 오른쪽은 SDG 13(지구 새싹).
+  const mascot = 88 * u;
+  const leftCx = Math.max(r.pad + mascot / 2, startX - gap * 1.4 - mascot / 2);
+  const rightCx = Math.min(r.W - r.pad - mascot / 2, startX + totalW + gap * 1.4 + mascot / 2);
+  Paint.eagleMascot(ctx, leftCx, rowY - 2 * u, mascot);
+  Paint.earthMascot(ctx, rightCx, rowY + 2 * u, mascot);
 
-  // 3) 날짜 + 컨셉 한 줄
+  // 4) 활동 문구
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = frame.inkSoft;
-  ctx.font = "bold " + Math.round(14 * u) + "px " + FONT_BODY;
-  ctx.fillText(todayLabel() + "  ·  미국문화 × SDG 13 기후행동 포토부스", cx, r.footerY + 206 * u);
+  ctx.fillStyle = frame.ink;
+  Paint.fitSize(ctx, FOOTER_CAPTION, r.W - r.pad * 2.4, (s) => "bold " + s + "px " + FONT_BODY, Math.round(16 * u), 10, 0.6 * u);
+  Paint.tracked(ctx, FOOTER_CAPTION, cx, r.footerY + 208 * u, { spacing: 0.6 * u });
   ctx.restore();
 }
 

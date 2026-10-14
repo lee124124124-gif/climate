@@ -28,11 +28,21 @@
       <div class="logo-bar">
         <span class="logo-chip" id="logo-chip" aria-hidden="true"></span>
         <div class="logo-copy">
-          <strong id="logo-status">학교 로고 확인 중…</strong>
-          <span>모든 사진 아래에 학교 로고가 함께 들어가요</span>
+          <strong id="logo-status">확인 중…</strong>
+          <span>금일중학교 로고 — 사진 아래 왼쪽에 들어가요</span>
         </div>
-        <button class="btn-mini" id="btn-logo-pick">로고 등록</button>
+        <button class="btn-mini" id="btn-logo-pick">등록</button>
         <input type="file" id="logo-input" accept="image/*" hidden>
+      </div>
+
+      <div class="logo-bar">
+        <span class="logo-chip" id="sdg-chip" aria-hidden="true"></span>
+        <div class="logo-copy">
+          <strong id="sdg-status">확인 중…</strong>
+          <span>SDG 13 로고 — 사진 아래 오른쪽에 들어가요</span>
+        </div>
+        <button class="btn-mini" id="btn-sdg-pick">등록</button>
+        <input type="file" id="sdg-input" accept="image/*" hidden>
       </div>
     </section>
 
@@ -69,7 +79,7 @@
     <section id="screen-camera" class="screen">
       <h2 class="step-title"><em>STEP 4</em>8장을 찍어요 📸</h2>
       <div class="camera-wrap">
-        <div class="shot-status" id="shot-status">촬영 시작을 누르면 10초 뒤에 자동으로 찍혀요</div>
+        <div class="shot-status" id="shot-status">촬영 시작을 누르면 10초 카운트 후 8장이 쉬지 않고 이어서 찍혀요</div>
         <div class="progress-dots" id="progress-dots"></div>
         <div class="video-frame">
           <video id="video" autoplay playsinline muted></video>
@@ -107,8 +117,9 @@
 
       <div class="share-wrap">
         <button class="btn-primary" id="btn-share">📤 공유하기</button>
-        <a class="btn-primary" id="btn-download" download="geumil-climate-photobooth.png">📥 기기에 저장</a>
+        <a class="btn-primary" id="btn-download" download="kumil-photobooth.png">📥 기기에 저장</a>
         <p class="share-status" id="share-status"></p>
+        <p class="save-hint" id="save-hint">저장이 안 되면 위 사진을 길게 눌러 <strong>이미지 저장</strong>을 선택하세요</p>
       </div>
 
       <div class="result-controls">

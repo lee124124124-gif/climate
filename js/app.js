@@ -10,6 +10,7 @@
     filter: "none",
     shots: [], // 찍은 8장 (dataURL)
     picked: [], // 고른 사진의 인덱스 — 고른 순서가 결과물의 순서가 된다
+    blobUrl: null, // 결과 이미지의 blob URL (기기 저장용)
   };
 
   const els = {
@@ -18,6 +19,11 @@
     logoStatus: document.getElementById("logo-status"),
     btnLogoPick: document.getElementById("btn-logo-pick"),
     logoInput: document.getElementById("logo-input"),
+    sdgChip: document.getElementById("sdg-chip"),
+    sdgStatus: document.getElementById("sdg-status"),
+    btnSdgPick: document.getElementById("btn-sdg-pick"),
+    sdgInput: document.getElementById("sdg-input"),
+    saveHint: document.getElementById("save-hint"),
     frameGrid: document.getElementById("frame-grid"),
     filterGrid: document.getElementById("filter-grid"),
     video: document.getElementById("video"),
@@ -48,8 +54,8 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // ───────── 학교 로고 ─────────
-  function paintLogoInto(el, size) {
+  // ───────── 로고 (학교 교표 / SDG 13) ─────────
+  function paintAssetInto(el, asset, size) {
     el.innerHTML = "";
     const canvas = document.createElement("canvas");
     const dpr = window.devicePixelRatio || 1;
@@ -59,29 +65,32 @@
     canvas.style.height = size + "px";
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
-    SchoolLogo.drawBadge(ctx, size / 2, size / 2, size / 2 - 1, getFrame(state.frame).ui.from);
+    asset.draw(ctx, size / 2, size / 2, size, getFrame(state.frame).ui.from);
     el.appendChild(canvas);
   }
 
-  function refreshLogoUI() {
-    paintLogoInto(els.brandLogo, 38);
-    paintLogoInto(els.logoChip, 52);
-    const messages = {
-      custom: "학교 로고가 등록되어 있어요 ✅",
-      file: "assets 폴더의 로고를 사용 중이에요 ✅",
-      none: "지금은 기본 엠블럼이에요 — 로고를 등록해주세요",
-    };
-    els.logoStatus.textContent = messages[SchoolLogo.source] || messages.none;
+  function statusText(asset, fileName, noneText) {
+    if (asset.source === "custom") return "등록된 이미지를 쓰고 있어요 ✅";
+    if (asset.source === "file") return "assets/" + fileName + " 을 쓰고 있어요 ✅";
+    return noneText;
   }
 
-  async function handleLogoFile(file) {
+  function refreshLogoUI() {
+    paintAssetInto(els.brandLogo, SchoolLogo, 38);
+    paintAssetInto(els.logoChip, SchoolLogo, 52);
+    paintAssetInto(els.sdgChip, SdgLogo, 52);
+    els.logoStatus.textContent = statusText(SchoolLogo, "logo.png", "아직 없어요 — 등록하면 바로 들어가요");
+    els.sdgStatus.textContent = statusText(SdgLogo, "sdg13.png", "아직 없어요 — 등록하면 바로 들어가요");
+  }
+
+  async function handleLogoFile(file, asset, statusEl) {
     if (!file) return;
     try {
-      await SchoolLogo.setFromFile(file);
+      await asset.setFromFile(file);
       refreshLogoUI();
       renderFrameGrid();
     } catch (e) {
-      els.logoStatus.textContent = "로고를 불러오지 못했어요. 다른 이미지 파일로 해주세요.";
+      statusEl.textContent = "이미지를 불러오지 못했어요. 다른 파일로 해주세요.";
     }
   }
 
@@ -137,7 +146,7 @@
     document.querySelectorAll(".frame-card").forEach((c) =>
       c.classList.toggle("selected", c.dataset.frame === id)
     );
-    paintLogoInto(els.brandLogo, 38);
+    paintAssetInto(els.brandLogo, SchoolLogo, 38);
     showScreen("screen-layout");
   }
 
@@ -194,7 +203,7 @@
     els.btnShootNow.hidden = true;
     els.btnSwitchCamera.disabled = false;
     els.cameraBack.hidden = false;
-    els.shotStatus.textContent = "촬영 시작을 누르면 " + COUNTDOWN + "초 뒤에 자동으로 찍혀요";
+    els.shotStatus.textContent = "촬영 시작을 누르면 " + COUNTDOWN + "초 카운트 후 " + SHOT_COUNT + "장이 쉬지 않고 이어서 찍혀요";
     setNotice("");
     els.video.style.filter = getFilter(state.filter).cssFilter;
 
@@ -217,6 +226,8 @@
     els.cameraBack.hidden = true;
     const activeFilter = getFilter(state.filter);
 
+    // 한 번 시작하면 8장을 다 찍을 때까지 카운트다운이 끊기지 않고 이어진다.
+    // (사이에 멈춤 없이 바로 다음 카운트로 넘어가므로 누를 것이 없다)
     for (let i = 0; i < SHOT_COUNT; i++) {
       els.shotStatus.textContent = SHOT_COUNT + "장 중 " + (i + 1) + "번째 — 포즈 준비!";
       const dataUrl = await Camera.countdownAndShoot({
@@ -230,8 +241,9 @@
       updateProgressDots(state.shots.length);
 
       if (i < SHOT_COUNT - 1) {
-        els.shotStatus.textContent = "좋아요! " + state.shots.length + "장 찍었어요 📸 다음 포즈 준비!";
-        await Camera.sleep(1500);
+        // 플래시가 사라질 짧은 틈만 두고 곧바로 다음 카운트다운을 시작한다.
+        els.shotStatus.textContent = "좋아요! " + state.shots.length + "장 찍었어요 📸 바로 다음 사진 갑니다!";
+        await Camera.sleep(400);
       }
     }
 
@@ -292,13 +304,27 @@
       const shots = state.picked.map((i) => state.shots[i]);
       const finalDataUrl = await composeResult(shots, state.layout, state.frame);
       els.resultImage.src = finalDataUrl;
-      els.btnDownload.href = finalDataUrl;
-      els.btnDownload.download = downloadFileName();
+      await prepareDownload(finalDataUrl);
       ShareUI.reset();
       showScreen("screen-result");
     } finally {
       els.btnCompose.textContent = "이 4장으로 만들기";
       els.btnCompose.disabled = state.picked.length !== PICK_COUNT;
+    }
+  }
+
+  // "기기에 저장" 준비. 완성 이미지는 용량이 커서 data: 주소 그대로 내려받게 하면
+  // 휴대폰 브라우저가 저장을 거부하는 경우가 있어, blob 주소로 바꿔서 건네준다.
+  async function prepareDownload(dataUrl) {
+    const fileName = downloadFileName();
+    els.btnDownload.download = fileName;
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      if (state.blobUrl) URL.revokeObjectURL(state.blobUrl);
+      state.blobUrl = URL.createObjectURL(blob);
+      els.btnDownload.href = state.blobUrl;
+    } catch (e) {
+      els.btnDownload.href = dataUrl; // blob을 못 만들면 원래 방식으로라도 내려받게 한다
     }
   }
 
@@ -359,7 +385,12 @@
 
     els.btnLogoPick.addEventListener("click", () => els.logoInput.click());
     els.logoInput.addEventListener("change", (e) => {
-      handleLogoFile(e.target.files && e.target.files[0]);
+      handleLogoFile(e.target.files && e.target.files[0], SchoolLogo, els.logoStatus);
+      e.target.value = "";
+    });
+    els.btnSdgPick.addEventListener("click", () => els.sdgInput.click());
+    els.sdgInput.addEventListener("change", (e) => {
+      handleLogoFile(e.target.files && e.target.files[0], SdgLogo, els.sdgStatus);
       e.target.value = "";
     });
   }
@@ -370,7 +401,7 @@
     renderFilterGrid();
     renderProgressDots();
     ShareUI.init(() => els.resultImage.src);
-    await SchoolLogo.load();
+    await Promise.all([SchoolLogo.load(), SdgLogo.load()]);
     refreshLogoUI();
     renderFrameGrid();
   }
