@@ -19,8 +19,29 @@ powershell -ExecutionPolicy Bypass -File .\serve.ps1
 서버를 실행한 뒤 브라우저(Chrome, Edge 권장)에서 `http://localhost:8000` 으로 접속하고,
 카메라 권한 요청이 뜨면 **허용**을 눌러주세요.
 
-> 휴대폰으로 쓰려면 PC와 같은 와이파이에 연결한 뒤 `http://<PC의 IP>:8000` 으로 접속하면 됩니다.
-> 다만 브라우저에 따라 `localhost`가 아닌 주소에서는 카메라를 막기도 하니, 행사 전에 꼭 한 번 시험해보세요.
+## 휴대폰에서 확인하기
+
+`serve.ps1`은 PC(localhost) 전용입니다. 휴대폰으로 보려면 `serve-mobile.ps1`을 쓰세요.
+
+```
+powershell -ExecutionPolicy Bypass -File .\serve-mobile.ps1 8444
+```
+
+실행하면 접속할 주소(`https://<PC의 IP>:8444`)를 알려줍니다. 휴대폰을 같은 네트워크에 연결하고 그 주소로 들어가면 됩니다.
+
+- **반드시 https 입니다.** 카메라(getUserMedia)는 `http://localhost` 아니면 `https://` 에서만 동작하기 때문에,
+  이 서버는 자체 서명 인증서를 만들어 HTTPS로 서비스합니다. (인증서는 처음 한 번만 만들고 이후 재사용)
+- 휴대폰에서 "연결이 비공개로 설정되어 있지 않습니다" 경고가 뜨면 **고급 → 계속 진행**을 누르세요.
+  아이폰은 **세부정보 보기 → 웹사이트 방문** 입니다. 통과한 뒤에는 카메라가 정상 동작합니다.
+- Windows 방화벽이 외부 접속을 막으므로, 관리자 PowerShell에서 한 번만 포트를 열어줘야 합니다.
+
+  ```powershell
+  New-NetFirewallRule -DisplayName "Photobooth Mobile Test (TCP 8444)" -Direction Inbound -Action Allow `
+    -Protocol TCP -LocalPort 8444 -RemoteAddress @('10.0.0.0/8','172.16.0.0/12','192.168.0.0/16')
+  ```
+
+  테스트가 끝나면 `Remove-NetFirewallRule -DisplayName "Photobooth Mobile Test (TCP 8444)"` 로 지우면 됩니다.
+- 학교 네트워크가 유선망과 Wi-Fi 사이를 막아둔 경우(클라이언트 격리)에는 이 방법으로도 접속이 안 될 수 있습니다.
 
 ## 학교 로고 넣기
 
@@ -68,7 +89,8 @@ js/camera.js                   # 카메라 스트림, 10초 카운트다운, 촬
 js/compose.js                   # 고른 4장을 배치·배경으로 합성해 최종 이미지 생성
 js/share.js                      # 결과 화면의 "공유하기"(Web Share API) 로직
 js/app.js                         # 화면 전환 상태머신, 전체 흐름 연결
-serve.ps1                          # Node/Python 없이 바로 쓸 수 있는 PowerShell 정적 서버
+serve.ps1                          # Node/Python 없이 바로 쓸 수 있는 PowerShell 정적 서버 (PC 전용)
+serve-mobile.ps1                    # 휴대폰 접속용 HTTPS 서버 (LAN 바인딩 + 자체 서명 인증서)
 ```
 
 **배경을 더 추가하려면** `js/frames.js`의 `FRAMES` 배열에 항목을 하나 추가하면 됩니다.
