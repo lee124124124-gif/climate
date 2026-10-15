@@ -10,6 +10,7 @@
     filter: "none",
     shots: [], // 찍은 8장 (dataURL)
     picked: [], // 고른 사진의 인덱스 — 고른 순서가 결과물의 순서가 된다
+    character: CHARACTER_SETS[0].id, // 사진에 같이 나올 캐릭터 동작
     blobUrl: null, // 결과 이미지의 blob URL (기기 저장용)
   };
 
@@ -41,6 +42,9 @@
     btnCompose: document.getElementById("btn-compose"),
     btnPickClear: document.getElementById("btn-pick-clear"),
     btnPickRetake: document.getElementById("btn-pick-retake"),
+    characterGrid: document.getElementById("character-grid"),
+    btnMake: document.getElementById("btn-make"),
+    btnRecharacter: document.getElementById("btn-recharacter"),
     resultImage: document.getElementById("result-image"),
     btnDownload: document.getElementById("btn-download"),
     btnReselect: document.getElementById("btn-reselect"),
@@ -65,7 +69,7 @@
     canvas.style.height = size + "px";
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
-    asset.draw(ctx, size / 2, size / 2, size, getFrame(state.frame).ui.from);
+    asset.draw(ctx, size / 2, size / 2, size, size, getFrame(state.frame).ui.from);
     el.appendChild(canvas);
   }
 
@@ -285,6 +289,41 @@
     updatePickUI();
   }
 
+  // ───────── 캐릭터 고르기 ─────────
+  function renderCharacterGrid() {
+    els.characterGrid.innerHTML = "";
+    CHARACTER_SETS.forEach((set) => {
+      const btn = document.createElement("button");
+      btn.className = "character-card" + (set.id === state.character ? " selected" : "");
+      btn.dataset.character = set.id;
+
+      const canvas = document.createElement("canvas");
+      canvas.className = "character-canvas";
+      canvas.width = 240;
+      canvas.height = 150;
+
+      const meta = document.createElement("span");
+      meta.className = "character-meta";
+      meta.innerHTML =
+        '<span class="character-label">' + set.label + "</span>" +
+        '<span class="character-desc">' + set.desc + "</span>";
+
+      btn.appendChild(canvas);
+      btn.appendChild(meta);
+      btn.addEventListener("click", () => selectCharacter(set.id));
+      els.characterGrid.appendChild(btn);
+
+      drawCharacterPreview(canvas, set.id);
+    });
+  }
+
+  function selectCharacter(id) {
+    state.character = id;
+    els.characterGrid.querySelectorAll(".character-card").forEach((c) =>
+      c.classList.toggle("selected", c.dataset.character === id)
+    );
+  }
+
   function updatePickUI() {
     els.pickGrid.querySelectorAll(".pick-card").forEach((card) => {
       const i = Number(card.dataset.index);
@@ -298,18 +337,19 @@
 
   // ───────── 결과 ─────────
   async function buildResult() {
-    els.btnCompose.disabled = true;
-    els.btnCompose.textContent = "만드는 중…";
+    els.btnMake.disabled = true;
+    els.btnMake.textContent = "만드는 중…";
     try {
+      await waitForFonts(); // 첫 화면에서 못 받았더라도 합성 직전에 한 번 더 확인
       const shots = state.picked.map((i) => state.shots[i]);
-      const finalDataUrl = await composeResult(shots, state.layout, state.frame);
+      const finalDataUrl = await composeResult(shots, state.layout, state.frame, state.character);
       els.resultImage.src = finalDataUrl;
       await prepareDownload(finalDataUrl);
       ShareUI.reset();
       showScreen("screen-result");
     } finally {
-      els.btnCompose.textContent = "이 4장으로 만들기";
-      els.btnCompose.disabled = state.picked.length !== PICK_COUNT;
+      els.btnMake.textContent = "이대로 완성하기";
+      els.btnMake.disabled = false;
     }
   }
 
@@ -338,6 +378,7 @@
     state.filter = "none";
     state.shots = [];
     state.picked = [];
+    state.character = CHARACTER_SETS[0].id;
     Camera.stop();
     document.querySelectorAll(".layout-card, .filter-card").forEach((c) =>
       c.classList.remove("selected")
@@ -372,12 +413,20 @@
       }
     });
 
-    els.btnCompose.addEventListener("click", buildResult);
+    els.btnCompose.addEventListener("click", () => {
+      renderCharacterGrid();
+      showScreen("screen-character");
+    });
     els.btnPickClear.addEventListener("click", () => {
       state.picked = [];
       updatePickUI();
     });
     els.btnPickRetake.addEventListener("click", retake);
+    els.btnMake.addEventListener("click", buildResult);
+    els.btnRecharacter.addEventListener("click", () => {
+      renderCharacterGrid();
+      showScreen("screen-character");
+    });
 
     els.btnReselect.addEventListener("click", () => showScreen("screen-pick"));
     els.btnRetake.addEventListener("click", retake);
@@ -395,13 +444,33 @@
     });
   }
 
+  // 캔버스에 글씨를 그리기 전에 웹폰트가 준비돼야 한다.
+  // 구글 폰트의 한글은 글자 묶음별로 쪼개져 있어서, 실제로 쓸 문장을 같이 넘겨야
+  // 필요한 묶음이 모두 받아진다. (안 그러면 일부 글자만 다른 글꼴로 나온다)
+  const FONT_SAMPLE = "금일중학교 북아메리카노 포토부스 세계시민 팀 프로젝트 활동 캐릭터 안녕 만세 하트 뿅 빼꼼 없음";
+
+  async function waitForFonts() {
+    if (!document.fonts || !document.fonts.load) return;
+    try {
+      await Promise.race([
+        Promise.all([
+          document.fonts.load('24px "Jua"', FONT_SAMPLE),
+          document.fonts.load('700 24px "Gaegu"', FONT_SAMPLE),
+        ]),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+    } catch (e) {
+      /* 글꼴을 못 받아도 그리기는 계속한다 */
+    }
+  }
+
   async function init() {
     document.body.dataset.frame = state.frame;
     wireButtons();
     renderFilterGrid();
     renderProgressDots();
     ShareUI.init(() => els.resultImage.src);
-    await Promise.all([SchoolLogo.load(), SdgLogo.load()]);
+    await Promise.all([SchoolLogo.load(), SdgLogo.load(), waitForFonts()]);
     refreshLogoUI();
     renderFrameGrid();
   }

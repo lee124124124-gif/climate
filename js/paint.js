@@ -4,6 +4,9 @@
 const FONT_DISPLAY = '"Arial Black", "Haettenschweiler", Impact, "Malgun Gothic", sans-serif';
 const FONT_BODY = '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
 const FONT_EMOJI = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+// 동글동글하고 귀여운 한글 글씨체. index.html에서 구글 폰트(Jua)를 불러오고,
+// 인터넷이 없으면 시스템 글꼴로 자연스럽게 넘어간다.
+const FONT_CUTE = '"Jua", "Gaegu", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
 
 const Paint = {
   // ───────── 기본 도형 ─────────
@@ -468,8 +471,36 @@ const Paint = {
   // 아래 두 캐릭터는 100×100 좌표계(가운데가 0,0)에 그린 뒤 size에 맞춰 확대/축소한다.
   // 눈을 크게, 볼에 홍조를 넣어 중학생들이 좋아할 만한 동글동글한 인상으로 맞췄다.
 
+  // 하트 (캐릭터의 "하트 뿅" 동작에 쓰인다)
+  heart(ctx, cx, cy, size, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + size * 0.75);
+    ctx.bezierCurveTo(cx - size * 1.3, cy - size * 0.2, cx - size * 0.45, cy - size * 1.05, cx, cy - size * 0.35);
+    ctx.bezierCurveTo(cx + size * 0.45, cy - size * 1.05, cx + size * 1.3, cy - size * 0.2, cx, cy + size * 0.75);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  },
+
+  // 손을 흔들 때 옆에 붙는 움직임 표시
+  motionArcs(ctx, cx, cy, size, color) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size * 0.1;
+    ctx.lineCap = "round";
+    for (let i = 1; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * (0.35 * i), -0.85, 0.3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+
   // 미국 상징 흰머리수리 + 엉클샘 모자.
-  eagleMascot(ctx, cx, cy, size) {
+  // pose: "stand"(기본) | "wave"(손 흔들기) | "cheer"(만세) | "heart"(하트) | "peek"(빼꼼)
+  eagleMascot(ctx, cx, cy, size, pose) {
     const brown = "#7A4A24";
     const brownDark = "#5E3719";
     const cream = "#FFFDF6";
@@ -477,9 +508,18 @@ const Paint = {
     const red = "#C8102E";
     const gold = "#F5B301";
 
+    const p = pose || "stand";
+
     ctx.save();
     ctx.translate(cx, cy);
     ctx.scale(size / 100, size / 100);
+
+    // "빼꼼"은 아래쪽을 잘라내 사진 모서리 뒤에서 고개만 내민 것처럼 보이게 한다.
+    if (p === "peek") {
+      ctx.beginPath();
+      ctx.rect(-60, -70, 120, 92);
+      ctx.clip();
+    }
 
     // 꼬리
     ctx.fillStyle = cream;
@@ -491,12 +531,20 @@ const Paint = {
     ctx.closePath();
     ctx.fill();
 
-    // 날개
+    // 날개 — 동작에 따라 위치와 각도가 달라진다.
+    const wingPos = {
+      stand: [{ x: -24, y: 10, r: -0.3 }, { x: 24, y: 10, r: 0.3 }],
+      peek: [{ x: -25, y: 6, r: -0.9 }, { x: 25, y: 6, r: 0.9 }],
+      wave: [{ x: -24, y: 10, r: -0.3 }, { x: 28, y: -12, r: 1.1 }],
+      cheer: [{ x: -27, y: -10, r: -1.0 }, { x: 27, y: -10, r: 1.0 }],
+      heart: [{ x: -19, y: -30, r: -1.5 }, { x: 19, y: -30, r: 1.5 }],
+    }[p] || [{ x: -24, y: 10, r: -0.3 }, { x: 24, y: 10, r: 0.3 }];
+
     ctx.fillStyle = brownDark;
-    [-1, 1].forEach((dir) => {
+    wingPos.forEach((w) => {
       ctx.save();
-      ctx.translate(dir * 24, 10);
-      ctx.rotate(dir * 0.3);
+      ctx.translate(w.x, w.y);
+      ctx.rotate(w.r);
       ctx.beginPath();
       ctx.ellipse(0, 0, 10, 19, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -567,24 +615,53 @@ const Paint = {
       ctx.fill();
     });
 
+    // 동작 효과
+    if (p === "wave") {
+      this.motionArcs(ctx, 40, -22, 14, "rgba(255,255,255,0.85)");
+    } else if (p === "cheer") {
+      ctx.fillStyle = "#FFD93D";
+      this.star(ctx, -38, -26, 6);
+      ctx.fill();
+      this.star(ctx, 38, -26, 6);
+      ctx.fill();
+    } else if (p === "heart") {
+      this.heart(ctx, 0, -74, 14, "#E8415A");
+    }
+
     ctx.restore();
   },
 
   // SDG 13(기후행동) 상징 — 새싹을 틔운 지구 캐릭터.
-  earthMascot(ctx, cx, cy, size) {
+  // pose: "stand"(기본) | "wave"(손 흔들기) | "cheer"(만세) | "heart"(하트) | "peek"(빼꼼)
+  earthMascot(ctx, cx, cy, size, pose) {
     const sea = "#2E8BD6";
     const land = "#49B56B";
     const leafColor = "#3F9E44"; // SDG 13 계열 녹색
+    const p = pose || "stand";
 
     ctx.save();
     ctx.translate(cx, cy);
     ctx.scale(size / 100, size / 100);
 
-    // 팔
-    ctx.fillStyle = sea;
-    [-1, 1].forEach((dir) => {
+    if (p === "peek") {
       ctx.beginPath();
-      ctx.ellipse(dir * 31, 14, 8, 6, dir * -0.5, 0, Math.PI * 2);
+      ctx.rect(-60, -70, 120, 92);
+      ctx.clip();
+    }
+
+    // 팔 — 동작에 따라 위치가 달라진다.
+    const armPos = {
+      stand: [{ x: -31, y: 14, r: 0.5 }, { x: 31, y: 14, r: -0.5 }],
+      peek: [{ x: -30, y: 4, r: 1.0 }, { x: 30, y: 4, r: -1.0 }],
+      wave: [{ x: -31, y: 14, r: 0.5 }, { x: 33, y: -8, r: -1.2 }],
+      cheer: [{ x: -32, y: -8, r: 1.2 }, { x: 32, y: -8, r: -1.2 }],
+      heart: [{ x: -20, y: -26, r: 1.6 }, { x: 20, y: -26, r: -1.6 }],
+    }[p] || [{ x: -31, y: 14, r: 0.5 }, { x: 31, y: 14, r: -0.5 }];
+
+    ctx.fillStyle = sea;
+    armPos.forEach((a) => {
+      ctx.beginPath();
+      ctx.ellipse(a.x, a.y, 8, 6, a.r, 0, Math.PI * 2);
       ctx.fill();
     });
 
@@ -661,6 +738,19 @@ const Paint = {
     ctx.stroke();
     this.leaf(ctx, -8, -38, 8, leafColor, -0.9);
     this.leaf(ctx, 8, -43, 9, "#56B96A", 0.9);
+
+    // 동작 효과
+    if (p === "wave") {
+      this.motionArcs(ctx, 45, -18, 14, "rgba(255,255,255,0.9)");
+    } else if (p === "cheer") {
+      ctx.fillStyle = "#FFE066";
+      this.star(ctx, -43, -24, 6);
+      ctx.fill();
+      this.star(ctx, 43, -24, 6);
+      ctx.fill();
+    } else if (p === "heart") {
+      this.heart(ctx, 0, -62, 14, "#FF6B8A");
+    }
 
     ctx.restore();
   },

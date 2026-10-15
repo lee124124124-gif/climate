@@ -113,38 +113,55 @@ function createImageAsset(opts) {
       });
     },
 
-    // 정사각형 자리(한 변 size)에 로고를 원본 비율 그대로 그린다.
-    draw(ctx, cx, cy, size, accentColor) {
-      const half = size / 2;
+    // maxW × maxH 안에 로고를 원본 비율 그대로, 가능한 한 크게 그린다.
+    // 가로로 긴 로고는 가로로 길게 들어가므로 정사각형에 억지로 맞춰 작아지지 않는다.
+    draw(ctx, cx, cy, maxW, maxH, accentColor) {
+      const inset = this.plate ? 0.84 : 1; // 받침 두께만큼 안쪽으로 들어간다
+      const boxW = maxW * inset;
+      const boxH = maxH * inset;
+
+      let w;
+      let h;
+      if (this.img) {
+        const scale = Math.min(boxW / this.img.width, boxH / this.img.height);
+        w = this.img.width * scale;
+        h = this.img.height * scale;
+      } else {
+        w = Math.min(boxW, boxH);
+        h = w;
+      }
 
       if (this.plate) {
         // 배경색과 상관없이 로고가 또렷하게 보이도록 흰 받침을 깐다. (로고 자체는 건드리지 않음)
+        const pad = Math.min(w, h) * 0.17;
+        const pw = w + pad * 2;
+        const ph = h + pad * 2;
+        const radius = Math.min(pw, ph) * 0.2;
+
         ctx.save();
         ctx.shadowColor = "rgba(0,0,0,0.2)";
-        ctx.shadowBlur = size * 0.16;
-        ctx.shadowOffsetY = size * 0.04;
+        ctx.shadowBlur = pad * 1.1;
+        ctx.shadowOffsetY = pad * 0.25;
         ctx.fillStyle = "#ffffff";
-        Paint.roundRect(ctx, cx - half, cy - half, size, size, size * 0.16);
+        Paint.roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, radius);
         ctx.fill();
         ctx.restore();
 
         if (accentColor) {
           ctx.save();
-          ctx.lineWidth = Math.max(1.5, size * 0.035);
+          ctx.lineWidth = Math.max(1.5, Math.min(pw, ph) * 0.035);
           ctx.strokeStyle = accentColor;
-          Paint.roundRect(ctx, cx - half + ctx.lineWidth / 2, cy - half + ctx.lineWidth / 2,
-            size - ctx.lineWidth, size - ctx.lineWidth, size * 0.14);
+          Paint.roundRect(ctx, cx - pw / 2 + ctx.lineWidth / 2, cy - ph / 2 + ctx.lineWidth / 2,
+            pw - ctx.lineWidth, ph - ctx.lineWidth, radius * 0.9);
           ctx.stroke();
           ctx.restore();
         }
       }
 
-      const pad = this.plate ? size * 0.12 : 0;
-      const box = size - pad * 2;
       if (this.img) {
-        Paint.contain(ctx, this.img, cx - box / 2, cy - box / 2, box, box);
+        Paint.contain(ctx, this.img, cx - w / 2, cy - h / 2, w, h);
       } else if (this.fallback) {
-        this.fallback(ctx, cx, cy, box);
+        this.fallback(ctx, cx, cy, Math.min(w, h));
       }
     },
   };

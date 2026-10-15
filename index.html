@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>아메리칸 기후 카니발 포토부스 | 금일중학교</title>
+<title>북아메리카노 포토부스 | 금일중학교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-frame="carnival">
@@ -15,8 +18,8 @@
     <header class="app-head">
       <span class="brand-logo" id="brand-logo" aria-hidden="true"></span>
       <div class="brand-text">
-        <strong>AMERICAN CLIMATE CARNIVAL</strong>
-        <span>금일중학교 × SDG 13 기후행동 포토부스</span>
+        <strong>북아메리카노 포토부스</strong>
+        <span>금일중학교 · 세계시민 팀 프로젝트 활동</span>
       </div>
     </header>
 
@@ -102,15 +105,26 @@
       <p class="pick-counter"><strong id="pick-count">0</strong> / 4 선택됨</p>
       <div class="pick-grid" id="pick-grid"></div>
       <div class="pick-controls">
-        <button class="btn-primary" id="btn-compose" disabled>이 4장으로 만들기</button>
+        <button class="btn-primary" id="btn-compose" disabled>다음 — 캐릭터 고르기</button>
         <button class="btn-secondary" id="btn-pick-clear">선택 지우기</button>
         <button class="btn-secondary" id="btn-pick-retake">다시 찍기</button>
       </div>
     </section>
 
-    <!-- 6. 결과 -->
+    <!-- 6. 캐릭터 고르기 -->
+    <section id="screen-character" class="screen">
+      <h2 class="step-title"><em>STEP 6</em>캐릭터를 골라요 🦅🌍</h2>
+      <p class="pick-counter">사진에 함께 나올 <strong>캐릭터 동작</strong>을 고르세요</p>
+      <div class="character-grid" id="character-grid"></div>
+      <div class="pick-controls">
+        <button class="btn-primary" id="btn-make">이대로 완성하기</button>
+        <button class="btn-secondary" data-back="screen-pick">← 사진 다시 고르기</button>
+      </div>
+    </section>
+
+    <!-- 7. 결과 -->
     <section id="screen-result" class="screen">
-      <h2 class="step-title"><em>STEP 6</em>완성됐어요! 🎉</h2>
+      <h2 class="step-title"><em>STEP 7</em>완성됐어요! 🎉</h2>
       <div class="result-wrap">
         <img id="result-image" alt="완성된 포토부스 사진" />
       </div>
@@ -123,6 +137,7 @@
       </div>
 
       <div class="result-controls">
+        <button class="btn-secondary" id="btn-recharacter">캐릭터 바꾸기</button>
         <button class="btn-secondary" id="btn-reselect">사진 다시 고르기</button>
         <button class="btn-secondary" id="btn-retake">다시 찍기</button>
         <button class="btn-secondary" id="btn-restart">처음부터</button>

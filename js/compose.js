@@ -108,6 +108,36 @@ function drawPhotos(ctx, r, frame, images) {
 // 사진 아래쪽에 들어가는 글귀. 행사 성격에 맞춰 이 문구만 바꾸면 네 배경에 한 번에 반영된다.
 const FOOTER_CAPTION = "세계시민 팀 프로젝트 활동 포토부스";
 
+// 사진을 고른 뒤 선택하는 캐릭터 프레임.
+// place: "bottom"(사진 아래 모서리) | "top"(사진 위 모서리), pose는 paint.js의 캐릭터 동작.
+const CHARACTER_SETS = [
+  { id: "wave", label: "안녕! 인사", desc: "아래 모서리에서 손 흔들기", pose: "wave", place: "bottom" },
+  { id: "cheer", label: "만세!", desc: "두 팔 번쩍 들고 만세", pose: "cheer", place: "bottom" },
+  { id: "heart", label: "하트 뿅", desc: "머리 위로 하트를 그려요", pose: "heart", place: "bottom" },
+  { id: "peek", label: "빼꼼", desc: "사진 위에서 고개만 쏙", pose: "peek", place: "top" },
+  { id: "none", label: "캐릭터 없음", desc: "사진만 깔끔하게", pose: null, place: null },
+];
+
+function getCharacterSet(id) {
+  return CHARACTER_SETS.find((c) => c.id === id) || CHARACTER_SETS[0];
+}
+
+// 고른 캐릭터를 사진 영역 모서리에 스티커처럼 올린다.
+function drawCharacters(ctx, r, setId) {
+  const set = getCharacterSet(setId);
+  if (!set.pose || !set.place) return;
+
+  const size = 100 * r.u;
+  const inset = 50 * r.u;
+  const leftX = r.pad + inset;
+  const rightX = r.W - r.pad - inset;
+  // 사진 가장자리에 반쯤 걸치게 둬서 사진을 적게 가리면서 스티커처럼 보이게 한다.
+  const y = set.place === "top" ? r.photoY + 18 * r.u : r.footerY - 18 * r.u;
+
+  Paint.eagleMascot(ctx, leftX, y, size, set.pose);
+  Paint.earthMascot(ctx, rightX, y, size, set.pose);
+}
+
 // 모든 프레임에 공통으로 들어가는 아래쪽 정보판 —
 // 구호 / 캐릭터 / 학교 로고 / 학교 이름 / SDG 13 로고 / 활동 문구. (날짜는 넣지 않는다)
 function drawFooterPlate(ctx, r, frame) {
@@ -123,57 +153,37 @@ function drawFooterPlate(ctx, r, frame) {
   Paint.tracked(ctx, frame.tagline, cx, r.footerY + 52 * u, { spacing: 2 * u });
   ctx.restore();
 
-  // 2) 학교 로고 + 학교 이름 + SDG 13 로고를 가운데 정렬로 한 줄에 배치
+  // 2) 로고는 양쪽 끝에 큼직하게, 학교 이름은 그 사이 가운데에.
   const rowY = r.footerY + 128 * u;
-  const logoSize = 78 * u;
-  const sdgSize = 74 * u;
-  const gap = 24 * u;
+  const logoW = 152 * u;
+  const logoH = 112 * u;
 
-  ctx.save();
-  ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
-  const nameW = ctx.measureText("금일중학교").width;
-  ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
-  const enW = ctx.measureText("KUMIL MIDDLE SCHOOL").width + 1.4 * u * 18;
-  const textW = Math.max(nameW, enW);
-  ctx.restore();
-
-  const totalW = logoSize + gap + textW + gap + sdgSize;
-  const startX = cx - totalW / 2;
-
-  // 학교 로고 / SDG 13 로고 — 둘 다 원본 이미지를 비율 그대로 넣는다.
-  SchoolLogo.draw(ctx, startX + logoSize / 2, rowY, logoSize, frame.logoRing);
-  SdgLogo.draw(ctx, startX + totalW - sdgSize / 2, rowY, sdgSize);
+  SchoolLogo.draw(ctx, r.pad + logoW / 2, rowY, logoW, logoH, frame.logoRing);
+  SdgLogo.draw(ctx, r.W - r.pad - logoW / 2, rowY, logoW, logoH);
 
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  const textCx = startX + logoSize + gap + textW / 2;
+  const nameMaxW = r.W - (r.pad + logoW) * 2 - 24 * u;
   ctx.fillStyle = frame.ink;
-  ctx.font = "bold " + Math.round(22 * u) + "px " + FONT_BODY;
-  ctx.fillText("금일중학교", textCx, rowY + 2 * u);
+  Paint.fitSize(ctx, "금일중학교", nameMaxW, (s) => s + "px " + FONT_CUTE, Math.round(30 * u), 14, 0);
+  ctx.fillText("금일중학교", cx, rowY + 2 * u);
   ctx.fillStyle = frame.inkSoft;
-  ctx.font = "bold " + Math.round(11 * u) + "px " + FONT_BODY;
-  Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL", textCx, rowY + 22 * u, { spacing: 1.4 * u });
+  ctx.font = "bold " + Math.round(12 * u) + "px " + FONT_BODY;
+  Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL", cx, rowY + 26 * u, { spacing: 1.4 * u });
   ctx.restore();
 
-  // 3) 양옆의 귀여운 캐릭터 — 왼쪽은 미국(흰머리수리), 오른쪽은 SDG 13(지구 새싹).
-  const mascot = 88 * u;
-  const leftCx = Math.max(r.pad + mascot / 2, startX - gap * 1.4 - mascot / 2);
-  const rightCx = Math.min(r.W - r.pad - mascot / 2, startX + totalW + gap * 1.4 + mascot / 2);
-  Paint.eagleMascot(ctx, leftCx, rowY - 2 * u, mascot);
-  Paint.earthMascot(ctx, rightCx, rowY + 2 * u, mascot);
-
-  // 4) 활동 문구
+  // 3) 활동 문구
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = frame.ink;
-  Paint.fitSize(ctx, FOOTER_CAPTION, r.W - r.pad * 2.4, (s) => "bold " + s + "px " + FONT_BODY, Math.round(16 * u), 10, 0.6 * u);
-  Paint.tracked(ctx, FOOTER_CAPTION, cx, r.footerY + 208 * u, { spacing: 0.6 * u });
+  Paint.fitSize(ctx, FOOTER_CAPTION, r.W - r.pad * 2.4, (s) => s + "px " + FONT_CUTE, Math.round(21 * u), 10, 0.6 * u);
+  Paint.tracked(ctx, FOOTER_CAPTION, cx, r.footerY + 210 * u, { spacing: 0.6 * u });
   ctx.restore();
 }
 
-async function composeResult(shots, layoutId, frameId) {
+async function composeResult(shots, layoutId, frameId, characterSetId) {
   const frame = getFrame(frameId);
   const r = layoutRect(layoutId);
   const images = await Promise.all(shots.map(loadImage));
@@ -188,9 +198,47 @@ async function composeResult(shots, layoutId, frameId) {
   frame.header(ctx, r);
   frame.footer(ctx, r);
   drawPhotos(ctx, r, frame, images);
+  drawCharacters(ctx, r, characterSetId); // 사진 위에 스티커처럼 올라간다
   drawFooterPlate(ctx, r, frame);
 
   return canvas.toDataURL("image/png");
+}
+
+// 캐릭터 선택 화면에 쓰는 작은 미리보기. 실제 합성과 같은 그림으로 동작만 보여준다.
+function drawCharacterPreview(canvas, setId) {
+  const set = getCharacterSet(setId);
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = "#F1F4F8";
+  Paint.roundRect(ctx, 0, 0, w, h, 12);
+  ctx.fill();
+
+  if (!set.pose) {
+    ctx.save();
+    ctx.strokeStyle = "#C3CBD6";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 6]);
+    Paint.roundRect(ctx, 14, 14, w - 28, h - 28, 10);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  // "빼꼼"은 사진 위쪽에 걸치는 동작이라, 미리보기에서도 아래에 사진 모서리를 깔아 보여준다.
+  // 머리 위로 올라가는 동작(하트 등)이 잘리지 않게 아래쪽에 여유를 두고 그린다.
+  const size = h * 0.68;
+  const y = set.place === "top" ? h * 0.46 : h * 0.6;
+  Paint.eagleMascot(ctx, w * 0.3, y, size, set.pose);
+  Paint.earthMascot(ctx, w * 0.7, y, size, set.pose);
+
+  if (set.place === "top") {
+    ctx.fillStyle = "#D7DEE7";
+    Paint.roundRect(ctx, 10, h * 0.62, w - 20, h * 0.42, 8);
+    ctx.fill();
+  }
 }
 
 // 프레임 선택 화면에서 쓰는 작은 미리보기. 실제 합성과 같은 painter로 그려서

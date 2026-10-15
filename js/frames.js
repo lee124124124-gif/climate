@@ -21,7 +21,7 @@ const FRAMES = [
     ui: { from: "#14225B", to: "#C8102E", accent: "#FFD93D" },
     preview: "linear-gradient(160deg,#14225B 0%,#14225B 38%,#C8102E 38%,#C8102E 56%,#FFF7EC 56%,#FFF7EC 74%,#2E8B57 74%)",
     title: "AMERICAN CLIMATE CARNIVAL",
-    sub: "미국문화 × 기후행동 포토부스",
+    sub: "북아메리카노 포토부스",
     tagline: "SAVE THE PLANET!",
     photoBorder: "#FFFFFF",
     ink: "#14225B",
@@ -82,10 +82,10 @@ const FRAMES = [
       ctx.fillStyle = "#ffffff";
       Paint.tracked(ctx, this.title, cx, 152 * u, { spacing: 1.5 * u, stroke: p.red, lineWidth: 7 * u });
 
-      // 한글 부제
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      ctx.font = "bold " + Math.round(17 * u) + "px " + FONT_BODY;
-      ctx.fillText(this.sub, cx, 184 * u);
+      // 한글 부제 (동글동글한 글씨체)
+      ctx.fillStyle = p.gold;
+      ctx.font = Math.round(24 * u) + "px " + FONT_CUTE;
+      ctx.fillText(this.sub, cx, 188 * u);
       ctx.restore();
 
       // 왼쪽엔 성조기, 오른쪽엔 잎사귀 — 미국과 환경을 한 쌍으로 둔다.
@@ -116,7 +116,7 @@ const FRAMES = [
     ui: { from: "#0B4A46", to: "#2AA38C", accent: "#FFD369" },
     preview: "linear-gradient(160deg,#0B4A46,#1E8D7C 60%,#2AA38C)",
     title: "CLIMATE ACTION!",
-    sub: "자유의 여신과 함께하는 기후행동",
+    sub: "북아메리카노 포토부스",
     tagline: "I WILL ACT FOR THE PLANET",
     photoBorder: "#F2FFFB",
     ink: "#FFFFFF",
@@ -181,9 +181,9 @@ const FRAMES = [
       ctx.font = "bold " + Math.round(15 * u) + "px " + FONT_BODY;
       Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL · SDG 13", cx, 182 * u, { spacing: 2 * u });
 
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.font = Math.round(15 * u) + "px " + FONT_BODY;
-      ctx.fillText(this.sub, cx, 208 * u);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = Math.round(22 * u) + "px " + FONT_CUTE;
+      ctx.fillText(this.sub, cx, 211 * u);
       ctx.restore();
     },
 
@@ -207,7 +207,7 @@ const FRAMES = [
     ui: { from: "#2E2254", to: "#FF8A4C", accent: "#FFD93D" },
     preview: "linear-gradient(180deg,#FFB15C,#F2714F 45%,#8E3A80 75%,#2E2254)",
     title: "GREEN ROUTE 66",
-    sub: "재생에너지로 달리는 기후행동 로드트립",
+    sub: "북아메리카노 포토부스",
     tagline: "DRIVE CLEAN · RIDE GREEN",
     photoBorder: "#FFF4E3",
     ink: "#FFFFFF",
@@ -301,8 +301,8 @@ const FRAMES = [
       Paint.tracked(ctx, "KUMIL MIDDLE SCHOOL · SDG 13", cx, 188 * u, { spacing: 1.8 * u });
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold " + Math.round(14 * u) + "px " + FONT_BODY;
-      ctx.fillText(this.sub, cx, 212 * u);
+      ctx.font = Math.round(22 * u) + "px " + FONT_CUTE;
+      ctx.fillText(this.sub, cx, 214 * u);
       ctx.restore();
     },
 
@@ -326,7 +326,7 @@ const FRAMES = [
     ui: { from: "#1F4435", to: "#D96F32", accent: "#F2C14E" },
     preview: "linear-gradient(170deg,#FAF0DC 0%,#F2C14E 30%,#D96F32 55%,#1F4435 100%)",
     title: "PROTECT OUR PLANET",
-    sub: "국립공원처럼 지구를 지켜요",
+    sub: "북아메리카노 포토부스",
     tagline: "KEEP IT WILD · KEEP IT COOL",
     photoBorder: "#FAF0DC",
     ink: "#1F4435",
@@ -383,9 +383,9 @@ const FRAMES = [
       const u = r.u;
       const cx = r.cx;
 
-      // 제목 리본
+      // 제목 리본 (아래에 부제가 들어갈 자리를 남겨둔다)
       const ribbonH = 56 * u;
-      const ribbonY = r.headerH - ribbonH - 16 * u;
+      const ribbonY = r.headerH - ribbonH - 44 * u;
       const ribbonW = r.W - r.pad * 2;
       ctx.save();
       ctx.fillStyle = p.cream;
@@ -416,6 +416,18 @@ const FRAMES = [
       // 빈티지 포스터 안쪽 모서리의 성조기
       Paint.usFlag(ctx, r.pad - 6 * u, 62 * u, 44 * u, 29 * u);
       Paint.usFlag(ctx, r.W - r.pad - 38 * u, 62 * u, 44 * u, 29 * u);
+
+      // 리본 아래 한글 부제 (동글동글한 글씨체).
+      // 짙은 녹색 산 위에 올라가므로 밝은 색 + 그림자로 또렷하게 보이게 한다.
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = p.cream;
+      ctx.shadowColor = "rgba(14,35,26,0.75)";
+      ctx.shadowBlur = 8 * u;
+      ctx.font = Math.round(22 * u) + "px " + FONT_CUTE;
+      ctx.fillText(this.sub, cx, r.headerH - 12 * u);
+      ctx.restore();
     },
 
     footer(ctx, r) {
